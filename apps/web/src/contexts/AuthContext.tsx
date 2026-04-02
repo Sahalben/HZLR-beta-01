@@ -99,12 +99,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateOnboardingState = useCallback(async (newState: OnboardingState) => {
-    // API call to update state
+    const API_URL = import.meta.env.VITE_API_URL || '';
+    await fetch(`${API_URL}/api/v1/auth/onboarding`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify({ state: newState })
+    });
     await refreshProfile();
   }, [refreshProfile]);
 
   const updateProfile = useCallback(async (updates: Partial<Profile>) => {
-    // API call to update profile
+    const API_URL = import.meta.env.VITE_API_URL || '';
+    await fetch(`${API_URL}/api/v1/auth/profile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify(updates)
+    });
     await refreshProfile();
   }, [refreshProfile]);
 

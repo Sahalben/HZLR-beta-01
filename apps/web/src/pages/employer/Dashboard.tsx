@@ -1,96 +1,49 @@
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Plus,
-  Users,
-  Briefcase,
-  FileText,
-  Bell,
-  ChevronRight,
-  Clock,
-  TrendingUp,
-  BadgeCheck,
+  Plus, Users, Briefcase, FileText, Bell, ChevronRight, Clock, TrendingUp, BadgeCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
-// Mock data
-const mockCompany = {
-  name: "Grand Hyatt Mumbai",
-  verified: true,
-  tier: "Premium",
-};
-
+// Static mock for layout purposes 
 const mockStats = {
-  activePostings: 3,
-  totalHires: 156,
   avgFillRate: "94%",
   avgTimeToFill: "2.4h",
 };
 
-const mockPostings = [
-  {
-    id: 1,
-    title: "F&B Service Staff",
-    pay: 900,
-    quantity: 5,
-    filled: 3,
-    status: "live",
-    applicants: 12,
-    prefunded: true,
-  },
-  {
-    id: 2,
-    title: "Kitchen Helper",
-    pay: 750,
-    quantity: 3,
-    filled: 3,
-    status: "filled",
-    applicants: 8,
-    prefunded: true,
-  },
-  {
-    id: 3,
-    title: "Event Setup Crew",
-    pay: 1100,
-    quantity: 10,
-    filled: 0,
-    status: "pending",
-    applicants: 0,
-    prefunded: false,
-  },
-];
-
-const mockApplicants = [
-  {
-    id: 1,
-    name: "Priya S.",
-    score: 94,
-    gigs: 47,
-    distance: "2.1km",
-    grooming: true,
-    verified: true,
-  },
-  {
-    id: 2,
-    name: "Rahul M.",
-    score: 91,
-    gigs: 32,
-    distance: "3.4km",
-    grooming: true,
-    verified: true,
-  },
-  {
-    id: 3,
-    name: "Amit K.",
-    score: 88,
-    gigs: 28,
-    distance: "4.2km",
-    grooming: false,
-    verified: true,
-  },
-];
-
 export default function EmployerDashboard() {
+  const { profile } = useAuth();
+  const { toast } = useToast();
+  const [postings, setPostings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || '';
+        const res = await fetch(`${API_URL}/api/v1/jobs/employer`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (res.ok) {
+           const data = await res.json();
+           setPostings(data);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchJobs();
+  }, []);
+
+  const totalHires = postings.reduce((sum, job) => sum + (job.filledSpots || 0), 0);
+  const activePostings = postings.filter(j => j.status !== 'COMPLETED').length;
+  // Combine all applicants from all jobs
+  const recentApplicants = postings.flatMap(j => j.applications || []).slice(0, 3);
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -115,8 +68,8 @@ export default function EmployerDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold">{mockCompany.name}</h1>
-          {mockCompany.verified && (
+          <h1 className="text-xl font-bold">{profile?.company_name || 'My Company'}</h1>
+          {(profile as any)?._verified && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-success/20 text-xs text-success">
               <BadgeCheck size={12} /> Verified
             </span>
@@ -128,8 +81,8 @@ export default function EmployerDashboard() {
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "Active Postings", value: mockStats.activePostings, icon: Briefcase, colorClass: "text-info" },
-            { label: "Total Hires", value: mockStats.totalHires, icon: Users, colorClass: "text-success" },
+            { label: "Active Postings", value: activePostings, icon: Briefcase, colorClass: "text-info" },
+            { label: "Total Hires", value: totalHires, icon: Users, colorClass: "text-success" },
             { label: "Fill Rate", value: mockStats.avgFillRate, icon: TrendingUp, colorClass: "text-warning" },
             { label: "Avg Fill Time", value: mockStats.avgTimeToFill, icon: Clock, colorClass: "text-pending" },
           ].map((stat) => {
@@ -177,41 +130,41 @@ export default function EmployerDashboard() {
             </Link>
           </div>
           <div className="space-y-3">
-            {mockPostings.map((posting) => (
+            {loading ? <p className="text-sm text-muted-foreground p-4">Loading your jobs...</p> : postings.length === 0 ? <p className="text-sm text-muted-foreground p-4">No jobs posted yet. Click 'Post Job' to get started!</p> : postings.map((posting) => (
               <Card key={posting.id} variant="elevated" className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-foreground">{posting.title}</h3>
-                      {posting.prefunded ? (
+                      {posting.isPrefunded ? (
                         <span className="badge-prefunded">Prefunded</span>
                       ) : (
                         <span className="badge-pending">Pending Prefund</span>
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
-                      ₹{posting.pay}/worker • {posting.quantity} spots
+                      ₹{posting.payPerWorker}/worker • {posting.totalSpots} spots
                     </p>
                   </div>
                   <div className="text-right">
                     <span
                       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                        posting.status === "live"
+                        posting.status === "ACTIVE"
                           ? "bg-success/10 text-success"
-                          : posting.status === "filled"
+                          : posting.status === "FILLED"
                           ? "bg-info/10 text-info"
                           : "bg-muted text-muted-foreground"
                       }`}
                     >
-                      {posting.status === "live" && <span className="w-1.5 h-1.5 rounded-full bg-success" />}
-                      {posting.status.charAt(0).toUpperCase() + posting.status.slice(1)}
+                      {posting.status === "ACTIVE" && <span className="w-1.5 h-1.5 rounded-full bg-success" />}
+                      {posting.status === "DRAFT" ? "Draft" : posting.status}
                     </span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>{posting.filled}/{posting.quantity} filled</span>
-                    <span>{posting.applicants} applicants</span>
+                    <span>{posting.filledSpots || 0}/{posting.totalSpots} filled</span>
+                    <span>{posting.applications?.length || 0} applicants</span>
                   </div>
                   <Button variant="ghost" size="sm">
                     View <ChevronRight size={16} />
@@ -231,22 +184,22 @@ export default function EmployerDashboard() {
             </Link>
           </div>
           <Card variant="elevated" className="divide-y divide-border">
-            {mockApplicants.map((applicant) => (
-              <div key={applicant.id} className="p-4 flex items-center justify-between">
+            {recentApplicants.length === 0 ? <p className="text-sm text-muted-foreground p-4">No recent applications.</p> : recentApplicants.map((app: any) => (
+              <div key={app.id} className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center font-bold text-foreground">
-                    {applicant.name.charAt(0)}
+                    {app.workerProfile?.firstName?.charAt(0) || "U"}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-semibold text-foreground">{applicant.name}</p>
-                      {applicant.verified && <BadgeCheck size={14} className="text-info" />}
-                      {applicant.grooming && (
+                      <p className="font-semibold text-foreground">{(app.workerProfile?.firstName || '') + ' ' + (app.workerProfile?.lastName?.charAt(0) || '') + '.'}</p>
+                      {app.workerProfile?.aadhaarVerified && <BadgeCheck size={14} className="text-info" />}
+                      {app.workerProfile?.groomingCertified && (
                         <span className="text-xs text-success">Grooming ✓</span>
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Score: {applicant.score} • {applicant.gigs} gigs • {applicant.distance}
+                      Status: {app.status} • Queue: {app.queuePosition || 0} 
                     </p>
                   </div>
                 </div>
@@ -254,9 +207,10 @@ export default function EmployerDashboard() {
                   <Button variant="outline" size="sm">
                     View
                   </Button>
+                  {app.status === 'APPLIED' && (
                   <Button variant="success" size="sm">
                     Accept
-                  </Button>
+                  </Button>)}
                 </div>
               </div>
             ))}

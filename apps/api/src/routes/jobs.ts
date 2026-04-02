@@ -1,12 +1,40 @@
 import { Router } from 'express';
 import { prisma } from '../index';
+import { authenticateToken } from './auth';
 
 const router = Router();
 
-router.get('/', async (req, res) => {
+// Worker: Get available jobs sorted by distance
+router.get('/available', authenticateToken, async (req: any, res) => {
     try {
         const jobs = await prisma.job.findMany({
+            where: { status: 'ACTIVE' },
             include: { employerProfile: true, businessProfile: true }
+        });
+        
+        // For MVP sorting by mock distance logic (using arbitrary static coordinates) 
+        // In prod this uses PostGIS or Haversine on lat/lng.
+        const sortedJobs = jobs.map(j => ({ ...j, distance: Math.random() * 10 })).sort((a,b) => a.distance - b.distance);
+
+        res.json(sortedJobs);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch jobs' });
+    }
+});
+
+// Employer: Get my jobs 
+router.get('/employer', authenticateToken, async (req: any, res) => {
+    try {
+        // Find employer profile associated with user
+        const employer = await prisma.employerProfile.findUnique({ where: { userId: req.user.id } });
+        if(!employer) return res.status(403).json({ error: 'Employer profile not found' });
+
+        const jobs = await prisma.job.findMany({
+            where: { employerProfileId: employer.id },
+            include: { 
+                 applications: { include: { workerProfile: { include: { user: true } } } } 
+            },
+            orderBy: { createdAt: 'desc' }
         });
         res.json(jobs);
     } catch (error) {
@@ -14,9 +42,15 @@ router.get('/', async (req, res) => {
     }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, async (req: any, res) => {
     try {
-        const { payPerWorker, totalSpots, isPrefunded, employerProfileId, ...rest } = req.body;
+        let { payPerWorker, totalSpots, isPrefunded, employerProfileId, ...rest } = req.body;
+
+        // Auto-assign employer profile
+        if (!employerProfileId) {
+             const emp = await prisma.employerProfile.findUnique({ where: { userId: req.user.id } });
+             if(emp) employerProfileId = emp.id;
+        }
 
         // Execute Job creation and EscrowHold atomically if prefunded
         const result = await prisma.$transaction(async (tx: any) => {

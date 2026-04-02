@@ -36,10 +36,11 @@ export default function KYCVerification() {
     fetchKYCRecord();
   }, [profile, navigate]);
 
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
   const fetchKYCRecord = async () => {
-    if (!user) return;
-    const localRec = localStorage.getItem(`hzlr_kyc_${user.id}`);
-    if (localRec) setKycRecord(JSON.parse(localRec));
+    // In the future this should fetch from /api/v1/users/me
+    // For now we rely on the auth state
   };
 
   const initiateKYC = async () => {
@@ -57,27 +58,22 @@ export default function KYCVerification() {
     setLoading(true);
 
     try {
-      // Check for existing record
-      const newRecord = {
-        id: `KYC_${Date.now()}`,
-        status: 'pending' as KYCStatus,
-        attempts: kycRecord ? kycRecord.attempts + 1 : 1
-      };
+      const res = await fetch(`${API_URL}/api/v1/kyc/initiate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id })
+      });
+      const data = await res.json();
 
-      localStorage.setItem(`hzlr_kyc_${user.id}`, JSON.stringify(newRecord));
-      setKycRecord(newRecord);
-
-      await updateOnboardingState('E_KYC_PENDING');
-
-      // Simulate KYC verification process
-      setVerifying(true);
-
-      // In production, this would redirect to the KYC provider
-      // For demo, we simulate a verification process
-      setTimeout(async () => {
-        await simulateKYCVerification();
-      }, 3000);
-
+      if(data.success) {
+         setKycRecord({ id: 'KYC_API', status: 'pending', attempts: data.attempts || 1 });
+         await updateOnboardingState('E_KYC_PENDING');
+         setVerifying(true);
+         
+         setTimeout(async () => {
+           await simulateKYCVerification();
+         }, 3000);
+      } else throw new Error(data.error);
     } catch (error) {
       toast({
         title: 'Error',
@@ -92,21 +88,25 @@ export default function KYCVerification() {
     if (!user) return;
 
     try {
-      const successRecord = { ...kycRecord, status: 'verified' as KYCStatus, verified_at: new Date().toISOString() };
-      localStorage.setItem(`hzlr_kyc_${user.id}`, JSON.stringify(successRecord));
-
-      await updateOnboardingState('E_KYC_VERIFIED');
-
-      toast({
-        title: 'KYC Verified!',
-        description: 'Your identity has been successfully verified.',
+      const res = await fetch(`${API_URL}/api/v1/kyc/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, success: true })
       });
+      const data = await res.json();
 
-      navigate('/signup/complete');
+      if (data.success) {
+        await updateOnboardingState('E_KYC_VERIFIED');
+        toast({
+          title: 'KYC Verified!',
+          description: 'Your identity has been successfully verified.',
+        });
+        navigate('/signup/complete');
+      } else {
+        throw new Error(data.error || 'Failed Verification');
+      }
     } catch (error) {
-      const failRecord = { ...kycRecord, status: 'failed' as KYCStatus, attempts: (kycRecord?.attempts || 0) + 1, id: '1' };
-      localStorage.setItem(`hzlr_kyc_${user.id}`, JSON.stringify(failRecord));
-      setKycRecord(failRecord);
+      setKycRecord({ id: 'KYC_API', status: 'failed', attempts: (kycRecord?.attempts || 0) + 1 });
       setVerifying(false);
       setLoading(false);
 

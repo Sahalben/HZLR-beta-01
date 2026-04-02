@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Wallet,
@@ -21,6 +21,7 @@ import { ReliabilityScore } from "@/components/shared/ReliabilityScore";
 import { GigCard } from "@/components/shared/GigCard";
 import { ApplicationModal } from "@/components/shared/ApplicationModal";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Mock data
 const mockUser = {
@@ -54,31 +55,6 @@ const mockUpcoming = [
   },
 ];
 
-const mockNearby = [
-  {
-    id: 1,
-    title: "F&B Staff",
-    employer: "Grand Hyatt",
-    pay: 900,
-    date: "Today, 6 PM",
-    distance: "2.1km",
-    prefunded: true,
-    spots: 2,
-    grooming: true,
-  },
-  {
-    id: 2,
-    title: "Event Setup",
-    employer: "Marriott Convention",
-    pay: 1200,
-    date: "Tomorrow, 8 AM",
-    distance: "4.5km",
-    prefunded: true,
-    spots: 5,
-    grooming: false,
-  },
-];
-
 const gigCategories = [
   { id: "housekeeping", name: "House Keeping", icon: "🧹", color: "bg-teal-500" },
   { id: "plumbing", name: "Plumbing", icon: "🔧", color: "bg-orange-500" },
@@ -97,29 +73,68 @@ const longTermJobs = [
 
 export default function WorkerHome() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [readyToWork, setReadyToWork] = useState(true);
+  const [availableJobs, setAvailableJobs] = useState<any[]>([]);
+  const [loadingJobs, setLoadingJobs] = useState(true);
+
   const [applicationModal, setApplicationModal] = useState<{
     open: boolean;
-    gig: typeof mockNearby[0] | null;
+    gig: any | null;
     type: "apply" | "queue";
   }>({ open: false, gig: null, type: "apply" });
 
-  const handleApply = (gig: typeof mockNearby[0]) => {
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || '';
+        const res = await fetch(`${API_URL}/api/v1/jobs/available`, {
+           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        if(res.ok) {
+           const data = await res.json();
+           setAvailableJobs(data);
+        }
+      } catch (e) { console.error(e); } finally { setLoadingJobs(false); }
+    };
+    fetchJobs();
+  }, []);
+
+  const handleApply = (gig: any) => {
     setApplicationModal({ open: true, gig, type: "apply" });
   };
 
-  const handleJoinQueue = (gig: typeof mockNearby[0]) => {
+  const handleJoinQueue = (gig: any) => {
     setApplicationModal({ open: true, gig, type: "queue" });
   };
 
-  const handleConfirmApplication = () => {
-    toast({
-      title: applicationModal.type === "apply" ? "Application Submitted" : "Joined Queue",
-      description: applicationModal.type === "apply" 
-        ? "Your application has been sent to the employer." 
-        : "You've been added to the backup queue.",
-    });
-    setApplicationModal({ open: false, gig: null, type: "apply" });
+  const handleConfirmApplication = async () => {
+    try {
+        const API_URL = import.meta.env.VITE_API_URL || '';
+        const res = await fetch(`${API_URL}/api/v1/applications`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+            body: JSON.stringify({ jobId: applicationModal.gig.id })
+        });
+        const data = await res.json();
+        
+        if (!res.ok) {
+           if (data.error === 'KYC_REQUIRED') {
+               toast({ title: "KYC Required", description: data.message, variant: "destructive" });
+               navigate('/signup/kyc');
+               return;
+           }
+           throw new Error(data.message || data.error);
+        }
+
+        toast({
+          title: "Application Submitted",
+          description: data.status === 'QUEUED' ? "You've been added to the backup queue." : "Your application has been accepted!",
+        });
+        setApplicationModal({ open: false, gig: null, type: "apply" });
+    } catch(e: any) {
+        toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
   };
 
   const handleWithdraw = () => {
@@ -136,7 +151,7 @@ export default function WorkerHome() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="text-sm text-primary-foreground/70">Good morning,</p>
-            <h1 className="text-2xl font-bold">{mockUser.name}</h1>
+            <h1 className="text-2xl font-bold">{profile?.full_name || 'Worker'}</h1>
           </div>
           <Link to="/worker/notifications" className="relative">
             <Bell size={24} />
@@ -148,30 +163,30 @@ export default function WorkerHome() {
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="text-center">
             <ReliabilityScore 
-              score={mockUser.reliabilityScore} 
+              score={100} 
               history={mockUser.history}
               size="md"
             />
             <p className="text-xs text-primary-foreground/60 mt-1">Reliability</p>
           </div>
           <div className="text-center">
-            <span className="text-xl font-bold">{mockUser.gigsCompleted}</span>
+            <span className="text-xl font-bold">0</span>
             <p className="text-xs text-primary-foreground/60">Gigs Done</p>
           </div>
           <div className="text-center">
-            <span className="text-xl font-bold">{mockUser.avgPay}</span>
+            <span className="text-xl font-bold">₹0</span>
             <p className="text-xs text-primary-foreground/60">Avg Pay</p>
           </div>
         </div>
 
         {/* Badges */}
         <div className="flex items-center gap-2">
-          {mockUser.verified && (
+          {(profile as any)?._aadhaarVerified && (
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-info/20 text-xs text-info">
               <BadgeCheck size={12} /> Aadhaar Verified
             </span>
           )}
-          {mockUser.groomingCertified && (
+          {(profile as any)?._groomingCertified && (
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-success/20 text-xs text-success">
               <TrendingUp size={12} /> Grooming Certified
             </span>
@@ -307,11 +322,18 @@ export default function WorkerHome() {
             </Link>
           </div>
           <div className="space-y-3">
-            {mockNearby.map((gig) => (
+            {loadingJobs ? <p className="text-sm text-muted-foreground">Finding nearby jobs...</p> : availableJobs.length === 0 ? <p className="text-sm text-muted-foreground">No jobs available within your radius right now.</p> : availableJobs.map((gig) => (
               <GigCard
                 key={gig.id}
-                {...gig}
-                status="available"
+                id={gig.id}
+                title={gig.title}
+                employer={gig.employerProfile?.firstName ? gig.employerProfile.firstName + ' (Verified)' : 'Private Employer'}
+                pay={gig.payPerWorker}
+                date={new Date(gig.scheduledFor).toLocaleString()}
+                distance={gig.distance?.toFixed(1) + 'km' || '1km'}
+                prefunded={gig.isPrefunded}
+                spots={gig.totalSpots - (gig.filledSpots || 0)}
+                status={(gig.totalSpots - (gig.filledSpots || 0)) > 0 ? "available" : "available"}
                 onApply={() => handleApply(gig)}
                 onJoinQueue={() => handleJoinQueue(gig)}
               />
@@ -368,13 +390,13 @@ export default function WorkerHome() {
         <ApplicationModal
           open={applicationModal.open}
           onOpenChange={(open) => setApplicationModal({ ...applicationModal, open })}
-          gig={{
+          gig={applicationModal.gig ? {
             title: applicationModal.gig.title,
-            employer: applicationModal.gig.employer,
-            pay: applicationModal.gig.pay,
-            date: applicationModal.gig.date,
-            distance: applicationModal.gig.distance,
-          }}
+            employer: applicationModal.gig.employerProfile?.firstName ? applicationModal.gig.employerProfile.firstName : 'Private Employer',
+            pay: applicationModal.gig.payPerWorker,
+            date: new Date(applicationModal.gig.scheduledFor).toLocaleString(),
+            distance: applicationModal.gig.distance?.toFixed(1) + 'km' || '1km',
+          } : { title: '', employer: '', pay: 0, date: '', distance: '' }}
           type={applicationModal.type}
           onConfirm={handleConfirmApplication}
         />

@@ -98,6 +98,7 @@ model User {
   preferredLanguage String             @default("en")
   fcmToken          String?
   lastLoginAt       DateTime?
+  onboardingState   String             @default("ANONYMOUS")
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
@@ -132,6 +133,8 @@ model WorkerProfile {
   aadhaarNumber     String?
   aadhaarVerified   Boolean            @default(false)
   aadhaarVerifiedAt DateTime?
+  kycStatus         VerificationStatus @default(UNVERIFIED)
+  kycAttempts       Int                @default(0)
   groomingCertified Boolean            @default(false)
   groomingBadges    String[]
   reliabilityScore  Float              @default(0)
