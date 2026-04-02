@@ -1,0 +1,9 @@
+{
+  "name": "hzlr-beta",
+  "version": "1.0.0",
+  "description": "HZLR Production Platform Root",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
