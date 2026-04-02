@@ -1,0 +1,444 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── ENUMS ───────────────────────────────────────
+
+enum UserRole {
+  WORKER
+  EMPLOYER
+  BUSINESS
+  AGENCY
+  ADMIN
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum JobStatus {
+  DRAFT
+  PENDING_PREFUND
+  ACTIVE
+  FILLED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum ApplicationStatus {
+  APPLIED
+  QUEUED
+  ACCEPTED
+  REJECTED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+  ESCROW_LOCK
+  ESCROW_RELEASE
+  ESCROW_REFUND
+  SUBSCRIPTION_CHARGE
+  WITHDRAWAL
+  REFUND
+  PLATFORM_FEE
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED_WORKER
+  RESOLVED_EMPLOYER
+  ESCALATED
+  CLOSED
+}
+
+enum AttendanceStatus {
+  NOT_STARTED
+  CHECKED_IN
+  CHECKED_OUT
+  CONFIRMED
+  PENDING_CONFIRMATION
+  ABSENT
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+  REFUNDED
+}
+
+// ─── USERS ───────────────────────────────────────
+
+model User {
+  id                String             @id @default(cuid())
+  phone             String?            @unique
+  email             String?            @unique
+  passwordHash      String?
+  role              UserRole
+  isActive          Boolean            @default(true)
+  isPhoneVerified   Boolean            @default(false)
+  isEmailVerified   Boolean            @default(false)
+  preferredLanguage String             @default("en")
+  fcmToken          String?
+  lastLoginAt       DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  workerProfile     WorkerProfile?
+  employerProfile   EmployerProfile?
+  businessProfile   BusinessProfile?
+  wallet            Wallet?
+  sentMessages      Message[]          @relation("SentMessages")
+  receivedMessages  Message[]          @relation("ReceivedMessages")
+  notifications     Notification[]
+  refreshTokens     RefreshToken[]
+  sosAlerts         SosAlert[]
+}
+
+model WorkerProfile {
+  id                String             @id @default(cuid())
+  userId            String             @unique
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName         String
+  lastName          String
+  photoUrl          String?
+  dateOfBirth       DateTime?
+  gender            String?
+  city              String?
+  state             String?
+  pincode           String?
+  latitude          Float?
+  longitude         Float?
+  bio               String?
+  skills            String[]
+  categories        String[]
+  aadhaarNumber     String?
+  aadhaarVerified   Boolean            @default(false)
+  aadhaarVerifiedAt DateTime?
+  groomingCertified Boolean            @default(false)
+  groomingBadges    String[]
+  reliabilityScore  Float              @default(0)
+  totalGigsDone     Int                @default(0)
+  avgPay            Float              @default(0)
+  isReadyToWork     Boolean            @default(false)
+  isAvailable       Boolean            @default(true)
+  subscriptionStatus SubscriptionStatus?
+  subscriptionAmount Float?
+  subscriptionDue   DateTime?
+  lastSubscriptionPaidAt DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  applications      Application[]
+  ratings           Rating[]           @relation("WorkerRatings")
+  givenRatings      Rating[]           @relation("WorkerGivenRatings")
+  attendance        Attendance[]
+  disputes          Dispute[]          @relation("WorkerDisputes")
+}
+
+model EmployerProfile {
+  id                String             @id @default(cuid())
+  userId            String             @unique
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName         String
+  lastName          String
+  photoUrl          String?
+  city              String?
+  state             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  jobs              Job[]
+  ratings           Rating[]           @relation("EmployerRatings")
+}
+
+model BusinessProfile {
+  id                String             @id @default(cuid())
+  userId            String             @unique
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName      String
+  businessType      String
+  logoUrl           String?
+  gstNumber         String?
+  isVerified        Boolean            @default(false)
+  verifiedAt        DateTime?
+  city              String?
+  state             String?
+  address           String?
+  tier              String             @default("basic")
+  tierExpiresAt     DateTime?
+  totalHires        Int                @default(0)
+  fillRate          Float              @default(0)
+  avgFillTime       Float              @default(0)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  jobs              Job[]
+  disputes          Dispute[]          @relation("BusinessDisputes")
+}
+
+// ─── JOBS ────────────────────────────────────────
+
+model Job {
+  id                String             @id @default(cuid())
+  employerProfileId String?
+  businessProfileId String?
+  employerProfile   EmployerProfile?   @relation(fields: [employerProfileId], references: [id])
+  businessProfile   BusinessProfile?   @relation(fields: [businessProfileId], references: [id])
+  title             String
+  description       String
+  category          String
+  skills            String[]
+  payPerWorker      Float
+  totalSpots        Int
+  filledSpots       Int                @default(0)
+  isPrefunded       Boolean            @default(false)
+  prefundedAt       DateTime?
+  scheduledFor      DateTime
+  estimatedHours    Float?
+  isInstant         Boolean            @default(false)
+  city              String
+  state             String
+  address           String
+  latitude          Float
+  longitude         Float
+  status            JobStatus          @default(DRAFT)
+  cancelledAt       DateTime?
+  cancelReason      String?
+  completedAt       DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  applications      Application[]
+  escrowHold        EscrowHold?
+  attendance        Attendance[]
+  disputes          Dispute[]
+  ratings           Rating[]
+}
+
+// ─── APPLICATIONS ────────────────────────────────
+
+model Application {
+  id                String             @id @default(cuid())
+  jobId             String
+  job               Job                @relation(fields: [jobId], references: [id])
+  workerProfileId   String
+  workerProfile     WorkerProfile      @relation(fields: [workerProfileId], references: [id])
+  status            ApplicationStatus  @default(APPLIED)
+  queuePosition     Int?
+  appliedAt         DateTime           @default(now())
+  acceptedAt        DateTime?
+  rejectedAt        DateTime?
+  confirmedAt       DateTime?
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  cancelReason      String?
+  notes             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  attendance        Attendance?
+
+  @@unique([jobId, workerProfileId])
+}
+
+// ─── WALLET & ESCROW ─────────────────────────────
+
+model Wallet {
+  id                String             @id @default(cuid())
+  userId            String             @unique
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance           Float              @default(0)
+  pendingBalance    Float              @default(0)
+  escrowBalance     Float              @default(0)
+  totalEarned       Float              @default(0)
+  totalWithdrawn    Float              @default(0)
+  upiId             String?
+  upiVerified       Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  transactions      Transaction[]
+}
+
+model Transaction {
+  id                String             @id @default(cuid())
+  walletId          String
+  wallet            Wallet             @relation(fields: [walletId], references: [id])
+  type              TransactionType
+  amount            Float
+  description       String
+  reference         String?
+  jobId             String?
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  status            String             @default("completed")
+  metadata          Json?
+  createdAt         DateTime           @default(now())
+}
+
+model EscrowHold {
+  id                String             @id @default(cuid())
+  jobId             String             @unique
+  job               Job                @relation(fields: [jobId], references: [id])
+  amount            Float
+  status            String             @default("held")
+  heldAt            DateTime           @default(now())
+  releasedAt        DateTime?
+  refundedAt        DateTime?
+  razorpayOrderId   String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+// ─── RATINGS ─────────────────────────────────────
+
+model Rating {
+  id                String             @id @default(cuid())
+  jobId             String
+  job               Job                @relation(fields: [jobId], references: [id])
+  workerProfileId   String
+  workerProfile     WorkerProfile      @relation("WorkerRatings", fields: [workerProfileId], references: [id])
+  givenByWorker     WorkerProfile?     @relation("WorkerGivenRatings", fields: [givenByWorkerId], references: [id])
+  givenByWorkerId   String?
+  employerProfileId String?
+  employerProfile   EmployerProfile?   @relation("EmployerRatings", fields: [employerProfileId], references: [id])
+  raterRole         String
+  score             Int
+  review            String?
+  isPublic          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+
+  @@unique([jobId, workerProfileId, raterRole])
+}
+
+// ─── ATTENDANCE ──────────────────────────────────
+
+model Attendance {
+  id                String             @id @default(cuid())
+  jobId             String
+  job               Job                @relation(fields: [jobId], references: [id])
+  applicationId     String             @unique
+  application       Application        @relation(fields: [applicationId], references: [id])
+  workerProfileId   String
+  workerProfile     WorkerProfile      @relation(fields: [workerProfileId], references: [id])
+  status            AttendanceStatus   @default(NOT_STARTED)
+  checkInTime       DateTime?
+  checkInLat        Float?
+  checkInLng        Float?
+  checkInDistance   Float?
+  checkOutTime      DateTime?
+  checkOutLat       Float?
+  checkOutLng       Float?
+  confirmedAt       DateTime?
+  confirmedBy       String?
+  notes             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+// ─── DISPUTES ────────────────────────────────────
+
+model Dispute {
+  id                String             @id @default(cuid())
+  jobId             String
+  job               Job                @relation(fields: [jobId], references: [id])
+  workerProfileId   String?
+  workerProfile     WorkerProfile?     @relation("WorkerDisputes", fields: [workerProfileId], references: [id])
+  businessProfileId String?
+  businessProfile   BusinessProfile?   @relation("BusinessDisputes", fields: [businessProfileId], references: [id])
+  raisedBy          String
+  reason            String
+  description       String
+  evidence          String[]
+  status            DisputeStatus      @default(OPEN)
+  resolution        String?
+  resolvedBy        String?
+  resolvedAt        DateTime?
+  escrowAction      String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+// ─── MESSAGES ────────────────────────────────────
+
+model Message {
+  id                String             @id @default(cuid())
+  senderId          String
+  sender            User               @relation("SentMessages", fields: [senderId], references: [id])
+  receiverId        String
+  receiver          User               @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  jobId             String?
+  content           String
+  isRead            Boolean            @default(false)
+  readAt            DateTime?
+  createdAt         DateTime           @default(now())
+}
+
+// ─── NOTIFICATIONS ───────────────────────────────
+
+model Notification {
+  id                String             @id @default(cuid())
+  userId            String
+  user              User               @relation(fields: [userId], references: [id])
+  type              String
+  title             String
+  body              String
+  data              Json?
+  isRead            Boolean            @default(false)
+  readAt            DateTime?
+  createdAt         DateTime           @default(now())
+}
+
+// ─── SOS ─────────────────────────────────────────
+
+model SosAlert {
+  id                String             @id @default(cuid())
+  userId            String
+  user              User               @relation(fields: [userId], references: [id])
+  jobId             String?
+  latitude          Float
+  longitude         Float
+  description       String?
+  status            String             @default("active")
+  resolvedAt        DateTime?
+  createdAt         DateTime           @default(now())
+}
+
+// ─── AUTH ────────────────────────────────────────
+
+model OtpCode {
+  id                String             @id @default(cuid())
+  phone             String?
+  email             String?
+  code              String
+  expiresAt         DateTime
+  isUsed            Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+}
+
+model RefreshToken {
+  id                String             @id @default(cuid())
+  userId            String
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token             String             @unique
+  expiresAt         DateTime
+  createdAt         DateTime           @default(now())
+}
