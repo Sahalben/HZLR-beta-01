@@ -3,5 +3,5 @@ builder = "NIXPACKS"
 buildCommand = "cd apps/api && npm install --include=dev && npx prisma generate && npm run build"
 
 [deploy]
-startCommand = "cd apps/api && npx prisma db push && npm start"
+startCommand = "cd apps/api && npx --yes prisma db push --accept-data-loss && npm start"
 restartPolicyType = "ON_FAILURE"
