@@ -96,8 +96,19 @@ router.post('/onboarding', authenticateToken, async (req: any, res) => {
 router.post('/profile', authenticateToken, async (req: any, res) => {
     try {
         const updates = req.body;
-        const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+        let user = await prisma.user.findUnique({ where: { id: req.user.id } });
         if(!user) return res.status(400).json({ error: 'User missing' });
+
+        // Update the base User role if they just selected it in onboarding
+        if (updates.role) {
+            const newRole = updates.role.toUpperCase();
+            if (newRole !== user.role && (newRole === 'WORKER' || newRole === 'EMPLOYER')) {
+                user = await prisma.user.update({
+                    where: { id: user.id },
+                    data: { role: newRole }
+                });
+            }
+        }
 
         if (user.role === 'WORKER') {
             await prisma.workerProfile.upsert({

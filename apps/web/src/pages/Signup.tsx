@@ -36,7 +36,7 @@ export default function Signup() {
             <Card
               variant="elevated"
               className="p-6 cursor-pointer hover:border-primary hover:border-2 transition-all group"
-              onClick={() => navigate("/worker/signup")}
+              onClick={() => navigate("/signup/otp", { state: { role: 'worker' } })}
             >
               <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <User size={32} className="text-emerald-500" />
@@ -59,11 +59,10 @@ export default function Signup() {
               </Button>
             </Card>
 
-            {/* Employer Card */}
             <Card
               variant="elevated"
               className="p-6 cursor-pointer hover:border-primary hover:border-2 transition-all group"
-              onClick={() => navigate("/employer/signup")}
+              onClick={() => navigate("/signup/otp", { state: { role: 'employer' } })}
             >
               <div className="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Briefcase size={32} className="text-blue-500" />

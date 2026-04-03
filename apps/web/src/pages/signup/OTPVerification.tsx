@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Step = 'phone' | 'otp';
 
@@ -20,6 +21,7 @@ export default function OTPVerification() {
   const [attempts, setAttempts] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { loginWithOtp } = useAuth();
 
   // Cooldown timer
   useEffect(() => {
@@ -124,38 +126,19 @@ export default function OTPVerification() {
     const formattedPhone = formatPhoneNumber(phone);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-      const response = await fetch(`${API_URL}/api/v1/auth/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: formattedPhone, code: otp }),
-      });
+      await loginWithOtp(formattedPhone, otp);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setAttempts(prev => prev + 1);
-        toast({
-          title: 'Invalid OTP',
-          description: data.error || `Incorrect code. ${5 - attempts - 1} attempts remaining.`,
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      if (data.token) {
-        localStorage.setItem('hzlr_access_token', data.token);
-        toast({
-          title: 'Verified!',
-          description: 'Your phone number has been verified.',
-        });
-        // The AuthContext will handle the redirect based on onboarding state
-        navigate('/signup/role');
-      }
-    } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Verification failed. Please try again.',
+        title: 'Verified!',
+        description: 'Your phone number has been verified.',
+      });
+      // The AuthContext will handle the redirect based on onboarding state
+      navigate('/signup/role');
+    } catch (error: any) {
+      setAttempts(prev => prev + 1);
+      toast({
+        title: 'Verification Failed',
+        description: error.message || `Incorrect code. ${5 - attempts - 1} attempts remaining.`,
         variant: 'destructive',
       });
     } finally {

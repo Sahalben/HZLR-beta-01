@@ -1,0 +1,4 @@
+apps/web/supabase/config.toml
+apps/web/supabase/migrations/20251224194636_b3d22ff8-7ea7-4998-8fae-41545bedce75.sql
+apps/web/supabase/migrations/20251224194707_2e80a09c-303e-44c0-afa9-82a78ba78230.sql
+apps/web/supabase/migrations/20260402115740_579e2722-d5b2-467c-8a0f-5f17a6fb193e.sql
