@@ -47,6 +47,10 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
+app.get('/', (req, res) => {
+    res.send('HZLR API is running');
+});
+
 httpServer.listen(Number(PORT), '0.0.0.0', () => {
     console.log(`Server is running natively on port ${PORT}`);
 });
