@@ -72,7 +72,13 @@ export default function OTPVerification() {
         body: JSON.stringify({ phone: formattedPhone, role: 'WORKER' }),
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        throw new Error(`API returned invalid JSON: "${text.substring(0, 40)}...". Is your VITE_API_URL (${API_URL}) pointing to the Railway API?`);
+      }
 
       if (!response.ok) {
         toast({
