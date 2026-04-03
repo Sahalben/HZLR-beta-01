@@ -89,10 +89,10 @@ export default function OTPVerification() {
         title: 'OTP Sent',
         description: `We've sent a verification code to ${formattedPhone}`,
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: 'Error',
-        description: 'Something went wrong. Please try again.',
+        title: 'Network Error',
+        description: error.message || 'Could not connect to the server. Check your connection or API URL.',
         variant: 'destructive',
       });
     } finally {
