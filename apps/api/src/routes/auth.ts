@@ -5,6 +5,17 @@ import jwt from 'jsonwebtoken';
 const router = Router();
 const JWT_SECRET = process.env.JWT_ACCESS_SECRET || 'fallback_secret_for_dev_min_64_chars';
 
+// TWILIO CONFIGURATION
+const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
+const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+const TWILIO_VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID;
+
+let twilioClient: any = null;
+if (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN) {
+    const twilio = require('twilio');
+    twilioClient = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+}
+
 export const authenticateToken = (req: any, res: Response, next: NextFunction) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -17,7 +28,7 @@ export const authenticateToken = (req: any, res: Response, next: NextFunction) =
     });
 };
 
-// Simulated OTP sending
+// Send OTP via Twilio
 router.post('/send-otp', async (req, res) => {
     const { phone } = req.body;
 
@@ -25,16 +36,42 @@ router.post('/send-otp', async (req, res) => {
         return res.status(400).json({ error: 'Phone number required' });
     }
 
-    // Simulate OTP send
-    res.json({ success: true, message: 'OTP sent to ' + phone, mockOtp: '123456' });
+    if (twilioClient && TWILIO_VERIFY_SERVICE_SID) {
+        try {
+            await twilioClient.verify.v2.services(TWILIO_VERIFY_SERVICE_SID)
+                .verifications.create({ to: phone, channel: 'sms' });
+            return res.json({ success: true, message: 'OTP sent to ' + phone });
+        } catch (error: any) {
+            console.error('Twilio Send Error:', error);
+            return res.status(500).json({ error: error.message || 'Failed to send OTP via Twilio' });
+        }
+    }
+
+    // Graceful fallback to Mock OTP if Twilio keys are missing during dev
+    res.json({ success: true, message: 'MOCK OTP sent to ' + phone, mockOtp: '123456' });
 });
 
 // Verify OTP and generate JWT
 router.post('/verify-otp', async (req, res) => {
     const { phone, otp } = req.body;
 
-    if (otp !== '123456') {
-        return res.status(401).json({ error: 'Invalid OTP' });
+    if (twilioClient && TWILIO_VERIFY_SERVICE_SID) {
+        try {
+            const verificationCheck = await twilioClient.verify.v2.services(TWILIO_VERIFY_SERVICE_SID)
+                .verificationChecks.create({ to: phone, code: otp });
+
+            if (verificationCheck.status !== 'approved') {
+                return res.status(401).json({ error: 'Invalid or expired OTP' });
+            }
+        } catch (error: any) {
+            console.error('Twilio Verify Error:', error);
+            return res.status(401).json({ error: error.message || 'Verification failed' });
+        }
+    } else {
+        // Graceful fallback purely for local dev without a Twilio Account
+        if (otp !== '123456') {
+            return res.status(401).json({ error: 'Invalid OTP' });
+        }
     }
 
     // UPSERT user
