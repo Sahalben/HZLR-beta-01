@@ -42,6 +42,7 @@ import ApplicantDetail from "./pages/employer/ApplicantDetail";
 import PostJob from "./pages/employer/PostJob";
 import Employees from "./pages/employer/Employees";
 import EmployeeDetail from "./pages/employer/EmployeeDetail";
+import EmployerOnboarding from "./pages/employer/onboarding/EmployerOnboarding";
 
 const queryClient = new QueryClient();
 
@@ -84,8 +85,8 @@ const App = () => (
           
           {/* Employer Routes */}
           <Route path="/employer" element={<Navigate to="/employer/home" replace />} />
+          <Route path="/employer/onboarding" element={<EmployerOnboarding />} />
           <Route path="/employer/home" element={<EmployerHome />} />
-          <Route path="/employer/post" element={<PostJob />} />
           <Route path="/employer/postings" element={<EmployerPostings />} />
           <Route path="/employer/postings/:id" element={<EmployerPostings />} />
           <Route path="/employer/applicants" element={<EmployerPostings />} />

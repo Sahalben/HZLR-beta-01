@@ -18,7 +18,11 @@ export default function RoleSelection() {
   // If role is already selected, redirect to next step
   React.useEffect(() => {
     if (profile?.role) {
-      navigate('/signup/profile', { replace: true });
+      if (profile.role === 'employer') {
+        navigate('/employer/onboarding', { replace: true });
+      } else {
+        navigate('/signup/profile', { replace: true });
+      }
     }
   }, [profile, navigate]);
 
@@ -36,7 +40,11 @@ export default function RoleSelection() {
     try {
       await updateProfile({ role: selectedRole });
       await updateOnboardingState('ROLE_SELECTED');
-      navigate('/signup/profile');
+      if (selectedRole === 'employer') {
+        navigate('/employer/onboarding');
+      } else {
+        navigate('/signup/profile');
+      }
     } catch (error) {
       toast({
         title: 'Error',
