@@ -96,4 +96,29 @@ router.get('/conversation/:otherUserId', authenticateToken, async (req: any, res
     }
 });
 
+// POST a new message universally
+router.post('/', authenticateToken, async (req: any, res) => {
+    try {
+        const { receiverId, content } = req.body;
+        if(!receiverId || !content) return res.status(400).json({ error: "Missing payload details" });
+
+        const msg = await prisma.message.create({
+            data: {
+                senderId: req.user.id,
+                receiverId,
+                content
+            }
+        });
+
+        res.json({ success: true, message: {
+            id: msg.id,
+            sender: req.user.role === 'WORKER' ? 'worker' : 'employer',
+            text: msg.content,
+            time: msg.createdAt
+        }});
+    } catch(err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 export default router;

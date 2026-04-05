@@ -174,4 +174,82 @@ router.post('/onboard/gst-verify', authenticateToken, async (req: any, res) => {
     }
 });
 
+// GET /api/v1/employers/employees - Retrieve all unique distinct workers accepted natively
+router.get('/employees', authenticateToken, async (req: any, res) => {
+    try {
+        const profile = await prisma.employerProfile.findUnique({ where: { userId: req.user.id } });
+        if(!profile) return res.status(404).json({ error: 'Profile not found' });
+
+        const apps = await prisma.application.findMany({
+            where: {
+                job: { employerProfileId: profile.id },
+                status: { in: ['COMPLETED', 'ACCEPTED'] }
+            },
+            include: {
+                workerProfile: true,
+                job: true
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+        const uniqueConfig = new Map();
+        apps.forEach((app) => {
+            const wId = app.workerProfile.id;
+            if(!uniqueConfig.has(wId)) {
+                uniqueConfig.set(wId, {
+                    id: wId,
+                    userId: app.workerProfile.userId,
+                    name: `${app.workerProfile.firstName} ${app.workerProfile.lastName}`,
+                    role: app.job.title,
+                    rating: app.workerProfile.reliabilityScore || 4.5,
+                    location: app.workerProfile.city || "Verified Location",
+                    joinDate: app.workerProfile.createdAt.toISOString(),
+                    verified: app.workerProfile.aadhaarVerified,
+                    gigsCompletedForMe: 1,
+                    latestJobId: app.jobId
+                });
+            } else {
+                uniqueConfig.get(wId).gigsCompletedForMe += 1;
+            }
+        });
+
+        res.json(Array.from(uniqueConfig.values()));
+    } catch(e: any) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// GET /api/v1/employers/invoices - Retrieves live receipts mapping job prefunds
+router.get('/invoices', authenticateToken, async (req: any, res) => {
+    try {
+        const profile = await prisma.employerProfile.findUnique({ where: { userId: req.user.id } });
+        if(!profile) return res.status(404).json({ error: 'Profile not found' });
+
+        const jobs = await prisma.job.findMany({
+            where: {
+                employerProfileId: profile.id,
+                isPrefunded: true
+            },
+            include: { escrowHold: true },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        const formatted = jobs.map((j) => ({
+            id: j.id,
+            invoiceNumber: `INV-${j.id.slice(-6).toUpperCase()}`,
+            date: j.createdAt.toISOString(),
+            amount: j.escrowHold ? j.escrowHold.amount : (j.payPerWorker * j.totalSpots),
+            status: j.status === 'COMPLETED' ? 'Paid' : 'Pending',
+            description: `Escrow hold for ${j.title} (${j.totalSpots} spots)`
+        }));
+
+        res.json(formatted);
+
+    } catch(e: any) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 export default router;
