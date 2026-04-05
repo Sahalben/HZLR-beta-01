@@ -36,12 +36,16 @@ import jobRoutes from './routes/jobs';
 import applicationRoutes from './routes/applications';
 import walletRoutes from './routes/wallets';
 import kycRoutes from './routes/kyc';
+import messagesRoutes from './routes/messages';
+import attendanceRoutes from './routes/attendance';
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/jobs', jobRoutes);
 app.use('/api/v1/applications', applicationRoutes);
 app.use('/api/v1/wallets', walletRoutes);
 app.use('/api/v1/kyc', kycRoutes);
+app.use('/api/v1/messages', messagesRoutes);
+app.use('/api/v1/attendance', attendanceRoutes);
 
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });

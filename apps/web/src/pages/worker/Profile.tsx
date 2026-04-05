@@ -1,20 +1,34 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { User, BadgeCheck, TrendingUp, Clock, Star, Edit2, ChevronRight, Shield, Award, Calendar, AlertTriangle, CheckCircle, Briefcase } from "lucide-react";
+import { User, BadgeCheck, TrendingUp, Clock, Star, Edit2, ChevronRight, Shield, Award, Calendar, AlertTriangle, CheckCircle, Briefcase, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { WorkerLayout } from "@/components/worker/WorkerLayout";
-import { ReliabilityScore } from "@/components/shared/ReliabilityScore";
 import { TicketModal } from "@/components/shared/TicketModal";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 export default function WorkerProfile() {
-  const { profile, user } = useAuth();
+  const { profile, user, updateProfile } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"overview" | "resume" | "certifications">("overview");
 
+  // Edit State
+  const [editOpen, setEditOpen] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editData, setEditData] = useState({
+     firstName: profile?.firstName || profile?.full_name?.split(' ')[0] || "",
+     lastName: profile?.lastName || profile?.full_name?.split(' ')[1] || "",
+     username: profile?.username || "",
+     phone: profile?.phone || user?.phone || ""
+  });
+
   // Dynamic Identity Parsing
-  const fullName = profile?.full_name || profile?.username || "Beta Tester";
+  const fullName = profile?.full_name || profile?.firstName ? `${profile.firstName} ${profile.lastName}` : profile?.username || user?.email?.split('@')[0] || "Worker";
   const locationString = profile?.address || "Location pending...";
   const memberSince = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   const isVerified = !!profile?.aadhaarVerified;
@@ -28,6 +42,24 @@ export default function WorkerProfile() {
   // We map completed applications here natively. Zero state by default.
   const resumeTimeline: any[] = []; 
 
+  const handleSaveProfile = async () => {
+     setEditSaving(true);
+     try {
+         await updateProfile({
+             username: editData.username,
+             firstName: editData.firstName,
+             lastName: editData.lastName,
+             phone: editData.phone
+         });
+         toast({ title: 'Profile Updated', description: 'Your identity has been saved securely to the database!' });
+         setEditOpen(false);
+     } catch (e: any) {
+         toast({ title: 'Update Failed', description: e.message || 'Something went wrong', variant: 'destructive'});
+     } finally {
+         setEditSaving(false);
+     }
+  };
+
   return (
     <WorkerLayout title="Profile">
       <div className="px-4 py-6 space-y-6">
@@ -35,20 +67,56 @@ export default function WorkerProfile() {
         <Card variant="elevated" className="p-6 relative overflow-hidden text-white border-0 bg-gradient-to-br from-zinc-800 to-zinc-950">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImRvdHMiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2RvdHMpIi8+PC9zdmc+')] opacity-20" />
           <div className="relative flex items-start gap-4">
-            <div className="w-20 h-20 rounded-2xl bg-seafoam flex items-center justify-center text-zinc-900 text-3xl font-black shadow-lg">
-              {fullName.charAt(0).toUpperCase()}
+            <div className="w-20 h-20 rounded-2xl bg-seafoam flex items-center justify-center text-zinc-900 text-3xl font-black shadow-lg uppercase">
+              {fullName.charAt(0)}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-xl font-bold tracking-tight">{fullName}</h2>
+                <h2 className="text-xl font-bold tracking-tight capitalize">{fullName}</h2>
                 {isVerified && <BadgeCheck size={18} className="text-info drop-shadow-md" />}
               </div>
               <p className="text-sm text-zinc-300">{locationString}</p>
               <p className="text-xs text-zinc-400 mt-1">Member since {memberSince}</p>
             </div>
-            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 hover:text-white">
-              <Edit2 size={18} />
-            </Button>
+            
+            {/* Native Edit Modal Trigger */}
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 hover:text-white">
+                  <Edit2 size={18} />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="w-[95%] rounded-2xl max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-black">Edit Identity</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                   <div className="grid grid-cols-2 gap-3">
+                       <div className="space-y-1.5">
+                          <Label>First Name</Label>
+                          <Input value={editData.firstName} onChange={(e) => setEditData({...editData, firstName: e.target.value})} placeholder="John" />
+                       </div>
+                       <div className="space-y-1.5">
+                          <Label>Last Name</Label>
+                          <Input value={editData.lastName} onChange={(e) => setEditData({...editData, lastName: e.target.value})} placeholder="Doe" />
+                       </div>
+                   </div>
+                   <div className="space-y-1.5">
+                      <Label>Public Username</Label>
+                      <Input value={editData.username} onChange={(e) => setEditData({...editData, username: e.target.value})} placeholder="john_doe_99" />
+                   </div>
+                   <div className="space-y-1.5">
+                      <Label>Phone Number</Label>
+                      <Input value={editData.phone} onChange={(e) => setEditData({...editData, phone: e.target.value})} placeholder="+91 99999 99999" />
+                   </div>
+                   <Button onClick={handleSaveProfile} disabled={editSaving} className="w-full mt-4 font-bold shadow-lg" size="lg">
+                       {editSaving ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
+                       Save Changes
+                   </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
           </div>
 
           {/* Stats Row */}
@@ -114,7 +182,7 @@ export default function WorkerProfile() {
               <div className="space-y-3 text-sm">
                 <div className="flex flex-col gap-1">
                   <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Phone</span>
-                  <span className="text-foreground font-medium">{profile?.phone || "Pending verification"}</span>
+                  <span className="text-foreground font-medium">{profile?.phone || user?.phone || "Pending verification"}</span>
                 </div>
                 <div className="h-px bg-border my-2" />
                 <div className="flex flex-col gap-1">
@@ -162,7 +230,7 @@ export default function WorkerProfile() {
                    <p className="text-muted-foreground text-sm max-w-xs mx-auto leading-relaxed">
                        You haven't completed any gigs on the platform yet. Start applying to build your digital resume!
                    </p>
-                   <Button variant="default" className="mt-6" asChild>
+                   <Button variant="default" className="mt-6 shadow-lg font-bold" asChild>
                        <Link to="/worker/search">Find First Gig</Link>
                    </Button>
                 </div>

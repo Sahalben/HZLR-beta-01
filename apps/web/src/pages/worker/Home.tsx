@@ -102,7 +102,7 @@ export default function WorkerHome() {
     }
   };
 
-  const nameTag = profile?.username || profile?.full_name?.split(' ')[0] || "Worker";
+  const nameTag = profile?.username || profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || "Worker";
 
   return (
     <WorkerLayout showHeader={false}>

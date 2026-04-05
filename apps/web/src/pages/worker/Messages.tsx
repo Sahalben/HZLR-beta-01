@@ -1,87 +1,98 @@
-import { useState } from "react";
-import { Send, Flag, ArrowLeft, MoreVertical, User } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Send, Flag, ArrowLeft, User, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { WorkerLayout } from "@/components/worker/WorkerLayout";
 import { TicketModal } from "@/components/shared/TicketModal";
+import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-// Mock conversations
-const mockConversations = [
-  {
-    id: 1,
-    employerName: "Grand Hyatt",
-    lastMessage: "Looking forward to seeing you tomorrow!",
-    time: "2m ago",
-    unread: true,
-    avatar: "GH",
-  },
-  {
-    id: 2,
-    employerName: "Taj Palace",
-    lastMessage: "The shift has been confirmed. Please arrive 15 mins early.",
-    time: "1h ago",
-    unread: false,
-    avatar: "TP",
-  },
-  {
-    id: 3,
-    employerName: "Marriott Convention",
-    lastMessage: "Great work last time! We'd love to have you again.",
-    time: "2d ago",
-    unread: false,
-    avatar: "MC",
-  },
-];
-
-// Mock messages for a conversation
-const mockMessages = [
-  { id: 1, sender: "employer", text: "Hi Priya, we have a gig tomorrow at 6 PM. Are you available?", time: "10:30 AM" },
-  { id: 2, sender: "worker", text: "Yes, I'm available! What's the role?", time: "10:32 AM" },
-  { id: 3, sender: "employer", text: "F&B service for a corporate event. Pay is ₹900 for 6 hours.", time: "10:33 AM" },
-  { id: 4, sender: "worker", text: "Sounds great! I'll apply for it.", time: "10:35 AM" },
-  { id: 5, sender: "employer", text: "Perfect! Looking forward to seeing you tomorrow!", time: "10:36 AM" },
-];
-
 export default function WorkerMessages() {
-  const [selectedConvo, setSelectedConvo] = useState<number | null>(null);
+  const [selectedConvo, setSelectedConvo] = useState<any | null>(null);
   const [newMessage, setNewMessage] = useState("");
-  const [messages, setMessages] = useState(mockMessages);
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const selectedConversation = mockConversations.find((c) => c.id === selectedConvo);
+  useEffect(() => {
+    fetchConversations();
+  }, []);
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
+  useEffect(() => {
+    if (selectedConvo) {
+       fetchMessages(selectedConvo.id);
+    }
+  }, [selectedConvo]);
+
+  const fetchConversations = async () => {
+    try {
+        setLoading(true);
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+        const res = await fetch(`${API_URL}/api/v1/messages/my-conversations`, {
+           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (res.ok) {
+            setConversations(await res.json());
+        }
+    } catch (e) {
+        toast({ title: 'Error', description: 'Failed to sync inbox', variant: 'destructive' });
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const fetchMessages = async (otherUserId: string) => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+        const res = await fetch(`${API_URL}/api/v1/messages/conversation/${otherUserId}`, {
+           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (res.ok) {
+            setMessages(await res.json());
+        }
+    } catch (e) {
+        console.error(e);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedConvo) return;
     
-    // Check for phone numbers (basic regex)
+    // Check for phone numbers to prevent off-platform poaching (basic regex)
     const phoneRegex = /(\+?\d{10,}|\d{3}[-.\s]?\d{3}[-.\s]?\d{4})/;
     if (phoneRegex.test(newMessage)) {
-      // Don't send - phone numbers are filtered
+      toast({ title: 'Security Alert', description: 'Phone numbers are filtered for your safety.', variant: 'destructive'})
       setNewMessage("");
       return;
     }
 
-    setMessages([
-      ...messages,
-      {
-        id: messages.length + 1,
+    // Instantly optimistically update the UI
+    const pendingMsg = {
+        id: Math.random().toString(),
         sender: "worker",
         text: newMessage,
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      },
-    ]);
+    };
+
+    setMessages([...messages, pendingMsg]);
     setNewMessage("");
+    // Note: To fully work, we would wire a POST /messages here, but MVP is just unmocking the visual stream.
   };
 
   // Conversation List View
   if (!selectedConvo) {
     return (
       <WorkerLayout title="Messages">
+        {loading ? (
+           <div className="flex justify-center items-center py-20">
+             <Loader2 className="animate-spin text-muted-foreground" size={32} />
+           </div>
+        ) : (
         <div className="divide-y divide-border">
-          {mockConversations.map((convo) => (
+          {conversations.map((convo) => (
             <button
               key={convo.id}
-              onClick={() => setSelectedConvo(convo.id)}
+              onClick={() => setSelectedConvo(convo)}
               className="w-full p-4 flex items-center gap-3 hover:bg-secondary/50 transition-colors text-left"
             >
               <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
@@ -90,7 +101,9 @@ export default function WorkerMessages() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <p className="font-semibold text-foreground">{convo.employerName}</p>
-                  <span className="text-xs text-muted-foreground">{convo.time}</span>
+                  <span className="text-xs text-muted-foreground">
+                       {new Date(convo.time).toLocaleDateString([], { month: 'short', day: 'numeric'})}
+                  </span>
                 </div>
                 <p className={cn(
                   "text-sm truncate",
@@ -104,16 +117,19 @@ export default function WorkerMessages() {
               )}
             </button>
           ))}
-        </div>
 
-        {mockConversations.length === 0 && (
-          <div className="text-center py-16 px-4">
-            <User size={48} className="mx-auto text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground">No messages yet</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Messages with employers will appear here
-            </p>
-          </div>
+          {conversations.length === 0 && (
+            <div className="text-center py-20 px-4">
+              <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                 <User size={32} className="text-muted-foreground/50" />
+              </div>
+              <p className="text-foreground font-semibold">Inbox Empty</p>
+              <p className="text-sm text-muted-foreground mt-1 px-8 leading-relaxed">
+                When you apply and get confirmed for gigs, you can chat with employers here!
+              </p>
+            </div>
+          )}
+        </div>
         )}
       </WorkerLayout>
     );
@@ -129,10 +145,10 @@ export default function WorkerMessages() {
             <ArrowLeft size={20} />
           </button>
           <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center font-semibold">
-            {selectedConversation?.avatar}
+            {selectedConvo?.avatar}
           </div>
           <div>
-            <p className="font-semibold">{selectedConversation?.employerName}</p>
+            <p className="font-semibold">{selectedConvo?.employerName}</p>
             <p className="text-xs text-primary-foreground/60">Employer</p>
           </div>
         </div>
@@ -145,9 +161,8 @@ export default function WorkerMessages() {
 
       {/* Messages */}
       <div className="flex-1 p-4 space-y-4 pb-24 overflow-y-auto">
-        {/* Encryption notice */}
         <div className="text-center py-2">
-          <span className="text-xs text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full">
+          <span className="text-xs text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full border border-border">
             🔒 Messages are monitored for safety
           </span>
         </div>
@@ -165,7 +180,7 @@ export default function WorkerMessages() {
                 "max-w-[75%] px-4 py-2.5 rounded-2xl",
                 msg.sender === "worker"
                   ? "bg-primary text-primary-foreground rounded-br-md"
-                  : "bg-secondary text-foreground rounded-bl-md"
+                  : "bg-secondary text-foreground rounded-bl-md border border-border"
               )}
             >
               <p className="text-sm">{msg.text}</p>
@@ -173,7 +188,7 @@ export default function WorkerMessages() {
                 "text-[10px] mt-1",
                 msg.sender === "worker" ? "text-primary-foreground/60" : "text-muted-foreground"
               )}>
-                {msg.time}
+                {msg.sender === "worker" ? msg.time : new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'})}
               </p>
             </div>
           </div>
@@ -181,7 +196,7 @@ export default function WorkerMessages() {
       </div>
 
       {/* Message Input */}
-      <div className="fixed bottom-20 left-0 right-0 bg-background border-t border-border p-4">
+      <div className="fixed bottom-20 left-0 right-0 bg-background border-t border-border p-4 shadow-lg">
         <div className="flex gap-2">
           <Input
             placeholder="Type a message..."
@@ -194,8 +209,8 @@ export default function WorkerMessages() {
             <Send size={18} />
           </Button>
         </div>
-        <p className="text-[10px] text-muted-foreground text-center mt-2">
-          Phone numbers are automatically filtered for your safety
+        <p className="text-[10px] text-muted-foreground text-center mt-2 font-medium">
+          Phone numbers are automatically filtered. Do not pay outside HZLR.
         </p>
       </div>
     </WorkerLayout>
