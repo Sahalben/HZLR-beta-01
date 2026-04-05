@@ -16,6 +16,7 @@ describe('Auth Integration Tests', () => {
         // Let's actually mock Prisma to return a user
         prismaMock.user.findUnique.mockResolvedValue({
             id: 'mock_user_1',
+            username: null,
             phone: '9999999999',
             role: 'WORKER',
             isActive: true,

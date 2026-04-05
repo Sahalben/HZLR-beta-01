@@ -142,6 +142,8 @@ router.get('/me', authenticateToken, async (req: any, res) => {
             user_id: user.id,
             role: user.role.toLowerCase(),
             phone: user.phone,
+            username: user.username,
+            email: user.email,
             onboarding_state: user.onboardingState,
             ...profileData
         };

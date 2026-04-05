@@ -28,7 +28,15 @@ export default function WorkerProfile() {
   });
 
   // Dynamic Identity Parsing
-  const fullName = profile?.full_name || profile?.firstName ? `${profile.firstName} ${profile.lastName}` : profile?.username || user?.email?.split('@')[0] || "Worker";
+  const buildFullName = () => {
+      if (profile?.firstName) return `${profile.firstName}${profile.lastName ? ' ' + profile.lastName : ''}`;
+      if (profile?.full_name) return profile.full_name;
+      if (profile?.username) return profile.username;
+      if (user?.email) return user.email.split('@')[0];
+      return "Worker";
+  };
+
+  const fullName = buildFullName();
   const locationString = profile?.address || "Location pending...";
   const memberSince = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   const isVerified = !!profile?.aadhaarVerified;
