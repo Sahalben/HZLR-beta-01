@@ -40,9 +40,9 @@ interface AuthContextType {
   refreshProfile: () => Promise<void>;
   updateOnboardingState: (newState: OnboardingState) => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
-  loginWithOtp: (phone: string, otp: string) => Promise<void>;
-  loginWithEmail: (email: string, password: string) => Promise<void>;
-  signupWithEmail: (email: string, password: string, role: UserRole) => Promise<void>;
+  loginWithOtp: (phone: string, otp: string) => Promise<any>;
+  loginWithEmail: (email: string, password: string) => Promise<any>;
+  signupWithEmail: (email: string, password: string, role: UserRole) => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -111,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (data.token) {
       localStorage.setItem('token', data.token);
       await refreshProfile();
+      return data.user;
     } else {
       throw new Error(data.error || 'Login failed');
     }

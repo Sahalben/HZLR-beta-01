@@ -18,14 +18,21 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     try {
-      await loginWithEmail(email, password);
-      // Determine routing based on successful role loading (handled gracefully by App.tsx router or context)
-      // Because context re-renders, it pushes them out of /login naturally.
+      const user = await loginWithEmail(email, password);
       toast({
         title: "Login Successful",
         description: "Welcome back!",
       });
-      navigate("/"); // The OnboardingGuard will redirect properly
+
+      const role = user?.role?.toLowerCase();
+      if (role === 'employer') {
+          navigate("/employer/home");
+      } else if (user?.onboardingState === 'ROLE_SELECTED') {
+          // Send to profile builder if they never finished!
+          navigate("/signup/profile");
+      } else {
+          navigate("/worker/home");
+      }
     } catch (err: any) {
       toast({
         title: "Error",
