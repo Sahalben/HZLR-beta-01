@@ -51,9 +51,9 @@ export default function EmployerHome() {
 
   return (
     <EmployerLayout>
-      <div className="p-6 space-y-6 pb-24 md:pb-6">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 pb-24 md:pb-6">
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mt-2">
           {[
             { label: "Active Postings", value: data.activePostings, icon: Briefcase, colorClass: "text-info" },
             { label: "Total Hires", value: data.totalHires, icon: Users, colorClass: "text-success" },
@@ -62,33 +62,33 @@ export default function EmployerHome() {
           ].map((stat) => {
             const Icon = stat.icon;
             return (
-              <Card key={stat.label} variant="elevated" className="p-4">
-                <Icon size={20} className={stat.colorClass} />
-                <p className="text-2xl font-bold text-foreground mt-2">{stat.value}</p>
-                <p className="text-xs text-muted-foreground">{stat.label}</p>
+              <Card key={stat.label} variant="elevated" className="p-3 sm:p-4">
+                <Icon size={18} className={`${stat.colorClass} sm:w-5 sm:h-5`} />
+                <p className="text-xl sm:text-2xl font-bold text-foreground mt-1 sm:mt-2">{stat.value}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">{stat.label}</p>
               </Card>
             );
           })}
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <Link to="/employer/post">
-            <Card variant="mint" className="p-4 text-center hover:scale-[1.02] transition-transform">
-              <Plus size={24} className="mx-auto mb-2 text-forest" />
-              <span className="text-sm font-semibold text-forest">Post New Job</span>
+            <Card variant="mint" className="p-3 sm:p-4 text-center hover:scale-[1.02] transition-transform">
+              <Plus size={20} className="mx-auto mb-1 sm:mb-2 text-forest sm:w-6 sm:h-6" />
+              <span className="text-[10px] sm:text-sm font-semibold text-forest leading-tight">Post Job</span>
             </Card>
           </Link>
           <Link to="/employer/postings">
-            <Card variant="outline" className="p-4 text-center hover:bg-secondary/50 transition-colors">
-              <Users size={24} className="mx-auto mb-2 text-seafoam" />
-              <span className="text-sm font-medium text-foreground">View Postings</span>
+            <Card variant="outline" className="p-3 sm:p-4 text-center hover:bg-secondary/50 transition-colors">
+              <Users size={20} className="mx-auto mb-1 sm:mb-2 text-seafoam sm:w-6 sm:h-6" />
+              <span className="text-[10px] sm:text-sm font-medium text-foreground leading-tight">Postings</span>
             </Card>
           </Link>
           <Link to="/employer/invoices">
-            <Card variant="outline" className="p-4 text-center hover:bg-secondary/50 transition-colors">
-              <FileText size={24} className="mx-auto mb-2 text-seafoam" />
-              <span className="text-sm font-medium text-foreground">Invoices</span>
+            <Card variant="outline" className="p-3 sm:p-4 text-center hover:bg-secondary/50 transition-colors">
+              <FileText size={20} className="mx-auto mb-1 sm:mb-2 text-seafoam sm:w-6 sm:h-6" />
+              <span className="text-[10px] sm:text-sm font-medium text-foreground leading-tight">Invoices</span>
             </Card>
           </Link>
         </div>

@@ -87,6 +87,7 @@ const App = () => (
           <Route path="/employer" element={<Navigate to="/employer/home" replace />} />
           <Route path="/employer/onboarding" element={<EmployerOnboarding />} />
           <Route path="/employer/home" element={<EmployerHome />} />
+          <Route path="/employer/post" element={<PostJob />} />
           <Route path="/employer/postings" element={<EmployerPostings />} />
           <Route path="/employer/postings/:id" element={<EmployerPostings />} />
           <Route path="/employer/applicants" element={<EmployerPostings />} />

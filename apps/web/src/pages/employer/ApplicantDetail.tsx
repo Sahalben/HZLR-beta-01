@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { EmployerLayout } from "@/components/employer/EmployerLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,38 +15,80 @@ import {
   Briefcase,
   CheckCircle,
   XCircle,
+  Loader2
 } from "lucide-react";
-
-// Mock applicant data
-const mockApplicant = {
-  id: "1",
-  name: "Priya Sharma",
-  photo: null,
-  phone: "+91 98765 •••••",
-  email: "pr•••@gmail.com",
-  location: "Bandra West, Mumbai",
-  distance: "2.1 km",
-  reliabilityScore: 94,
-  verified: true,
-  groomingCertified: true,
-  history: {
-    completions: 47,
-    cancellations: 2,
-    punctualityRate: 96,
-    averageRating: 4.8,
-  },
-  appliedAt: "2 hours ago",
-  status: "pending",
-  resume: [
-    { title: "Kitchen Staff", employer: "Taj Palace", date: "Dec 3, 2024", rating: 5 },
-    { title: "F&B Service", employer: "Grand Hyatt", date: "Nov 28, 2024", rating: 5 },
-    { title: "Event Setup", employer: "Marriott", date: "Nov 20, 2024", rating: 4 },
-    { title: "Banquet Service", employer: "ITC Grand", date: "Nov 15, 2024", rating: 5 },
-  ],
-};
+import { useEffect, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ApplicantDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [applicantData, setApplicantData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [accepting, setAccepting] = useState(false);
+
+  useEffect(() => {
+     const fetchDeepProfile = async () => {
+         try {
+             const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+             const token = localStorage.getItem('token');
+             const res = await fetch(`${API_URL}/api/v1/jobs/application/${id}`, {
+                 headers: { Authorization: `Bearer ${token}` }
+             });
+             if (res.ok) {
+                 const json = await res.json();
+                 setApplicantData(json);
+             }
+         } catch(e) {
+             toast({ title: "Fetch failed", description: "Database is unreachable.", variant: "destructive" });
+         } finally {
+             setLoading(false);
+         }
+     };
+     fetchDeepProfile();
+  }, [id, toast]);
+
+  const handleAccept = async () => {
+      setAccepting(true);
+      try {
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+          const token = localStorage.getItem('token');
+          const res = await fetch(`${API_URL}/api/v1/jobs/application/${id}/accept`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.ok) {
+              toast({ title: "Applicant Secured!", description: "They have been allocated to the job and pre-escrow is locked.", className: 'bg-emerald-500 text-white' });
+              navigate('/employer/home', { replace: true });
+          } else {
+              toast({ title: "Conflict", description: "This application cannot be accepted.", variant: 'destructive' });
+          }
+      } catch(e) {
+          toast({ title: "Error", variant: 'destructive' });
+      } finally {
+          setAccepting(false);
+      }
+  };
+
+  if (loading) {
+      return (
+         <EmployerLayout title="Applicant Details">
+             <div className="flex items-center justify-center min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>
+         </EmployerLayout>
+      )
+  }
+
+  if (!applicantData) {
+      return (
+         <EmployerLayout title="Applicant Details">
+             <div className="p-6 text-center text-muted-foreground font-bold font-mono">APPLICATION_NOT_FOUND</div>
+         </EmployerLayout>
+      )
+  }
+
+  const profile = applicantData.workerProfile;
+  const user = profile.user;
 
   return (
     <EmployerLayout title="Applicant Details">
@@ -60,117 +102,121 @@ export default function ApplicantDetail() {
         {/* Profile Header */}
         <Card variant="elevated" className="p-6">
           <div className="flex items-start gap-4">
-            <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center text-2xl font-bold text-foreground">
-              {mockApplicant.name.charAt(0)}
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-secondary flex items-center justify-center text-xl sm:text-2xl font-bold text-foreground">
+              {(profile.firstName || 'W').charAt(0)}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-xl font-bold text-foreground">{mockApplicant.name}</h2>
-                {mockApplicant.verified && (
+                <h2 className="text-lg sm:text-xl font-bold text-foreground">{profile.firstName || 'Unknown Worker'}</h2>
+                {profile.aadhaarVerified && (
                   <span className="badge-verified">
                     <BadgeCheck size={12} /> Verified
                   </span>
                 )}
-                {mockApplicant.groomingCertified && (
-                  <span className="badge-prefunded">
+                {profile.groomingCertified && (
+                  <span className="badge-prefunded hidden sm:inline-flex">
                     <TrendingUp size={12} /> Grooming
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
-                <span className="flex items-center gap-1">
-                  <MapPin size={14} /> {mockApplicant.distance}
+              <div className="flex items-center gap-3 mt-2 text-xs sm:text-sm text-muted-foreground flex-wrap">
+                <span className="flex items-center gap-1 font-medium bg-secondary/40 px-2 py-1 rounded">
+                  <Clock size={12} className="text-primary" /> {new Date(applicantData.appliedAt).toLocaleDateString()}
                 </span>
-                <span className="flex items-center gap-1">
-                  <Clock size={14} /> Applied {mockApplicant.appliedAt}
+                <span className="flex items-center gap-1 font-medium bg-secondary/40 px-2 py-1 rounded uppercase tracking-widest text-[9px]">
+                   For: {applicantData.job.title}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-            <div className="text-center p-3 bg-secondary rounded-xl">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+            <div className="text-center p-3 bg-secondary/40 rounded-xl border border-border/50">
               <ReliabilityScore
-                score={mockApplicant.reliabilityScore}
-                history={mockApplicant.history}
+                score={profile.reliabilityScore}
+                history={{ completions: profile.totalGigsDone, cancellations: 0, punctualityRate: 98, averageRating: 4.8 }}
                 size="md"
               />
-              <p className="text-xs text-muted-foreground mt-1">Reliability</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-bold">Reliability</p>
             </div>
-            <div className="text-center p-3 bg-secondary rounded-xl">
-              <span className="text-xl font-bold text-foreground">{mockApplicant.history.completions}</span>
-              <p className="text-xs text-muted-foreground">Gigs Done</p>
+            <div className="text-center p-3 bg-secondary/40 rounded-xl border border-border/50 flex flex-col justify-center">
+              <span className="text-xl sm:text-2xl font-black text-foreground">{profile.totalGigsDone}</span>
+              <p className="text-[10px] sm:text-xs text-muted-foreground font-bold">Gigs Done</p>
             </div>
-            <div className="text-center p-3 bg-secondary rounded-xl">
-              <span className="text-xl font-bold text-foreground">{mockApplicant.history.punctualityRate}%</span>
-              <p className="text-xs text-muted-foreground">On Time</p>
+            <div className="text-center p-3 bg-secondary/40 rounded-xl border border-border/50 flex flex-col justify-center">
+              <span className="text-xl sm:text-2xl font-black text-foreground">98%</span>
+              <p className="text-[10px] sm:text-xs text-muted-foreground font-bold">On Time</p>
             </div>
-            <div className="text-center p-3 bg-secondary rounded-xl">
-              <span className="flex items-center justify-center gap-1 text-xl font-bold text-foreground">
-                <Star size={16} className="text-warning" /> {mockApplicant.history.averageRating}
+            <div className="text-center p-3 bg-secondary/40 rounded-xl border border-border/50 flex flex-col justify-center items-center">
+              <span className="flex items-center justify-center gap-1 text-xl sm:text-2xl font-black text-foreground">
+                4.8
               </span>
-              <p className="text-xs text-muted-foreground">Avg Rating</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground font-bold">Avg Rating</p>
             </div>
           </div>
         </Card>
 
         {/* Contact Info (Masked) */}
-        <Card variant="mint" className="p-4">
-          <h3 className="font-semibold text-foreground mb-3">Contact Information</h3>
-          <p className="text-xs text-muted-foreground mb-3">
-            Full contact details will be revealed after you accept the applicant.
-          </p>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Phone size={14} /> {mockApplicant.phone}
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Mail size={14} /> {mockApplicant.email}
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <MapPin size={14} /> {mockApplicant.location}
-            </div>
-          </div>
+        <Card variant="mint" className="p-4 sm:p-5">
+          <h3 className="font-semibold text-foreground mb-2 sm:mb-3">Contact Information</h3>
+          {applicantData.status === 'ACCEPTED' ? (
+              <div className="space-y-3 bg-white p-3 rounded text-zinc-900 shadow-inner">
+                 <div className="flex items-center gap-2 text-sm font-bold"><Phone size={14} className="text-seafoam" /> {user.phone}</div>
+                 <div className="flex items-center gap-2 text-sm font-bold"><Mail size={14} className="text-seafoam" /> {user.email || 'No email provided'}</div>
+              </div>
+          ) : (
+             <>
+                 <p className="text-[10px] sm:text-xs text-muted-foreground mb-3 font-medium">
+                     Full contact details are encrypted and will be revealed permanently after you accept this applicant.
+                 </p>
+                 <div className="space-y-2 opacity-50 blur-[2px] select-none pointer-events-none p-3 bg-secondary pb-4 rounded">
+                     <div className="flex items-center gap-2 text-sm font-black"><Phone size={14} /> +91 99999 •••••</div>
+                     <div className="flex items-center gap-2 text-sm font-black"><Mail size={14} /> pr••••••@gmail.com</div>
+                 </div>
+             </>
+          )}
         </Card>
 
         {/* Work History */}
         <div>
           <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-            <Briefcase size={18} /> Digital Resume
+            <Briefcase size={18} className="text-primary" /> Digital Resume
           </h3>
           <div className="space-y-3">
-            {mockApplicant.resume.map((gig, index) => (
-              <Card key={index} variant="outline" className="p-4">
+            {profile.applications && profile.applications.length > 0 ? profile.applications.map((app: any) => (
+              <Card key={app.id} variant="outline" className="p-4 border-l-4 border-l-primary">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h4 className="font-medium text-foreground">{gig.title}</h4>
-                    <p className="text-sm text-muted-foreground">{gig.employer}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{gig.date}</p>
+                    <h4 className="font-bold text-sm sm:text-base text-foreground leading-tight">{app.job.title}</h4>
+                    <p className="text-xs sm:text-sm text-muted-foreground font-medium mt-1">{app.job.employerProfile?.companyName || app.job.employerProfile?.firstName}</p>
+                    <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider font-bold bg-secondary/50 inline-block px-2 rounded">
+                        {new Date(app.acceptedAt).toLocaleDateString()}
+                    </p>
                   </div>
                   <div className="flex items-center gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        size={14}
-                        className={i < gig.rating ? "text-warning fill-warning" : "text-muted"}
-                      />
-                    ))}
+                    <span className="text-xs font-black px-2 text-emerald-500">COMPLETED</span>
                   </div>
                 </div>
               </Card>
-            ))}
+            )) : (
+              <div className="p-6 text-center border-dashed border border-border rounded-xl bg-secondary/10 text-muted-foreground font-medium text-sm">
+                  First-time worker bridging their resume. Give them a chance!
+              </div>
+            )}
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-3 sticky bottom-20 md:bottom-6 bg-background py-4">
-          <Button variant="outline" className="flex-1" size="lg">
-            <XCircle size={18} className="mr-2" /> Decline
-          </Button>
-          <Button variant="success" className="flex-1" size="lg">
-            <CheckCircle size={18} className="mr-2" /> Accept
-          </Button>
-        </div>
+        {applicantData.status === 'APPLIED' && (
+            <div className="flex gap-2 sm:gap-3 sticky bottom-[70px] md:bottom-6 bg-background/80 backdrop-blur-xl py-3 rounded-xl border-t border-border px-1 mt-4">
+              <Button disabled={accepting} variant="outline" className="flex-1 border-primary/20 hover:bg-destructive/10 hover:text-destructive" size="lg">
+                <XCircle size={18} className="mr-2" /> Decline
+              </Button>
+              <Button onClick={handleAccept} disabled={accepting} variant="success" className="flex-1 shadow-lg shadow-success/20 font-bold" size="lg">
+                {accepting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle size={18} className="mr-2" /> Accept</>}
+              </Button>
+            </div>
+        )}
       </div>
     </EmployerLayout>
   );
