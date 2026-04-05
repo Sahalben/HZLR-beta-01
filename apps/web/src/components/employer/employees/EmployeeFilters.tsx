@@ -18,7 +18,9 @@ interface EmployeeFiltersProps {
   totalCount: number;
 }
 
-const categoryTags = ["F&B", "Logistics", "Events", "Retail", "Hospitality", "Warehouse", "Security"];
+const categoryTags = [
+  "Food & Beverage", "Events & Hospitality", "Kitchen & Cooking", "Catering & Food Prep", "Bartending", "Cleaning & Housekeeping", "Babysitting & Childcare", "Elder Care", "Pet Care", "Gardening & Landscaping", "Laundry & Ironing", "Plumbing", "Electrical", "Carpentry & Woodwork", "Painting & Decorating", "Construction & Labour", "AC & Appliance Repair", "Pest Control", "Warehouse & Logistics", "Delivery & Courier", "Moving & Shifting", "Driving & Chauffeur", "Ride Sharing", "Car Wash & Detailing", "Security & Guard", "Beauty & Grooming", "Fitness & Personal Training", "Yoga & Wellness", "Mehendi & Makeup", "Healthcare & Nursing", "Pharmacy Assistance", "Photography & Videography", "Graphic Design", "Content Writing", "DJ & Entertainment", "Event Decoration", "Modelling & Promotion", "Mascot & Costume", "Voice & Dubbing", "Wedding Services", "Data Entry & Admin", "Customer Support", "Sales & Promotions", "Teaching & Tutoring", "IT & Tech Support", "Social Media Management", "Accounting & Finance", "Legal & Documentation", "Translation", "Tailoring & Alterations", "Other"
+];
 
 export function EmployeeFilters({ filters, onFiltersChange, onExport, totalCount }: EmployeeFiltersProps) {
   const updateFilter = <K extends keyof EmployeeFiltersState>(key: K, value: EmployeeFiltersState[K]) => {
