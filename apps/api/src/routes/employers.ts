@@ -50,7 +50,8 @@ router.get('/dashboard', authenticateToken, async (req: any, res) => {
         if (!profile) return res.status(404).json({ error: 'Profile required' });
 
         const jobs = await prisma.job.findMany({
-            where: { employerProfileId: profile.id }
+            where: { employerProfileId: profile.id },
+            orderBy: { createdAt: 'desc' }
         });
 
         const activePostings = jobs.filter(j => j.status === 'ACTIVE').length;
@@ -60,15 +61,61 @@ router.get('/dashboard', authenticateToken, async (req: any, res) => {
         const fillRate = totalHires > 0 ? 94 : 0; 
         const avgFillTime = totalHires > 0 ? 2.4 : 0; 
 
+        // 1. Fetch available workers on the platform that are marked READY
+        const rawWorkers = await prisma.workerProfile.findMany({
+            where: { 
+                 isReadyToWork: true,
+                 latitude: { not: null },
+                 longitude: { not: null }
+            },
+            take: 100,
+            select: { id: true, firstName: true, reliabilityScore: true, latitude: true, longitude: true, categories: true }
+        });
+
+        // OBFUSCATOR: Shifts coordinates randomly by ~100-300 meters for safety!
+        const activeWorkers = rawWorkers.map(w => ({
+            id: w.id,
+            name: `${w.firstName || 'Worker'}`,
+            score: w.reliabilityScore,
+            tags: w.categories,
+            latitude: w.latitude! + (Math.random() - 0.5) * 0.005,
+            longitude: w.longitude! + (Math.random() - 0.5) * 0.005
+        }));
+
+        // 2. Fetch Recent Applicants relating to this Employer's Jobs
+        const applications = await prisma.application.findMany({
+            where: {
+                job: { employerProfileId: profile.id },
+                status: 'APPLIED'
+            },
+            include: {
+                workerProfile: { select: { firstName: true, reliabilityScore: true, totalGigsDone: true, groomingCertified: true, aadhaarVerified: true } },
+                job: { select: { title: true } }
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 5
+        });
+
+        const formattedApplicants = applications.map(app => ({
+            id: app.id,
+            name: app.workerProfile.firstName + ' ' + (app.workerProfile.aadhaarVerified ? '✓' : ''),
+            score: app.workerProfile.reliabilityScore,
+            gigs: app.workerProfile.totalGigsDone,
+            verified: app.workerProfile.aadhaarVerified,
+            jobTitle: app.job.title
+        }));
+
         res.json({
             activePostings,
             totalHires,
             fillRate,
             avgFillTime,
-            jobs: jobs.slice(0, 5) // Recent 5 jobs
+            jobs: jobs.slice(0, 5), // Recent 5 jobs
+            activeWorkers,
+            applicants: formattedApplicants
         });
     } catch (e: any) {
-        if (!process.env.DATABASE_URL) return res.json({ activePostings: 0, totalHires: 0, fillRate: 0, avgFillTime: 0, jobs: [] });
+        if (!process.env.DATABASE_URL) return res.json({ activePostings: 0, totalHires: 0, fillRate: 0, avgFillTime: 0, jobs: [], activeWorkers: [], applicants: [] });
         res.status(500).json({ error: e.message });
     }
 });
