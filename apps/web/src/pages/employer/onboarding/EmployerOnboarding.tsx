@@ -68,7 +68,7 @@ export default function EmployerOnboarding() {
              })
           });
 
-          await updateOnboardingState('COMPLETED');
+          await updateOnboardingState('ONBOARDING_COMPLETE');
           navigate('/employer/home', { replace: true });
       } catch (e: any) {
           toast({ title: "Failed to persist profile", description: e.message, variant: 'destructive' });

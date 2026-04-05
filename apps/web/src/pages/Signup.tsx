@@ -46,8 +46,12 @@ export default function Signup() {
         title: "Account Created",
         description: "Welcome to HZLR!",
       });
-      // Redirect to the new multi-step profile builder
-      navigate("/signup/profile");
+      // Redirect to the precise multi-step profile builder
+      if (role === 'employer') {
+        navigate("/employer/onboarding");
+      } else {
+        navigate("/signup/profile");
+      }
     } catch (error: any) {
       toast({
         title: "Error",
