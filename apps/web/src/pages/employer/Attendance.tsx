@@ -39,16 +39,40 @@ import {
   AttendanceRecord,
 } from "@/data/mockAttendance";
 import { format } from "date-fns";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 export default function EmployerAttendance() {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [gigFilter, setGigFilter] = useState<string>("all");
-  const [records, setRecords] = useState<AttendanceRecord[]>(mockAttendanceRecords);
+  const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+     const fetchAttendance = async () => {
+         try {
+             const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+             const token = localStorage.getItem('token');
+             const res = await fetch(`${API_URL}/api/v1/attendance/employer-records`, {
+                 headers: { Authorization: `Bearer ${token}` }
+             });
+             if (res.ok) {
+                 const data = await res.json();
+                 setRecords(data);
+             }
+         } catch(e) {
+             toast({ title: "Check-ins failed", variant: "destructive" });
+         } finally {
+             setLoading(false);
+         }
+     };
+     fetchAttendance();
+  }, [toast]);
 
   const uniqueGigs = Array.from(
-    new Set(mockAttendanceRecords.map((r) => r.gigTitle))
+    new Set(records.map((r) => r.gigTitle))
   );
 
   const filteredRecords = records.filter((record) => {
@@ -136,6 +160,10 @@ export default function EmployerAttendance() {
   return (
     <EmployerLayout title="Attendance">
       <div className="p-6 space-y-6 pb-24 md:pb-6">
+        {loading ? (
+             <div className="flex justify-center p-10"><Loader2 className="animate-spin text-primary w-8 h-8" /></div>
+        ) : (
+           <>
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card variant="mint" className="p-4">
@@ -353,6 +381,8 @@ export default function EmployerAttendance() {
             </TableBody>
           </Table>
         </Card>
+        </>
+        )}
       </div>
     </EmployerLayout>
   );

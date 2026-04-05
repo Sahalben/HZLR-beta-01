@@ -3,8 +3,10 @@ import { EmployerLayout } from "@/components/employer/EmployerLayout";
 import { EmployeeFilters } from "@/components/employer/employees/EmployeeFilters";
 import { EmployeeTable } from "@/components/employer/employees/EmployeeTable";
 import { BulkActionsBar } from "@/components/employer/employees/BulkActionsBar";
-import { mockEmployees } from "@/data/mockEmployees";
+import { Employee } from "@/data/mockEmployees"; // Using type only
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
 
 export interface EmployeeFiltersState {
   search: string;
@@ -32,9 +34,52 @@ export default function Employees() {
   const { toast } = useToast();
   const [filters, setFilters] = useState<EmployeeFiltersState>(initialFilters);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [liveEmployees, setLiveEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+     const fetchEmployees = async () => {
+         try {
+             const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+             const token = localStorage.getItem('token');
+             const res = await fetch(`${API_URL}/api/v1/employers/employees`, {
+                 headers: { Authorization: `Bearer ${token}` }
+             });
+             if (res.ok) {
+                 const data = await res.json();
+                 // Map to required filter syntax
+                 const mapped = data.map((w: any) => ({
+                    id: w.id,
+                    name: w.name,
+                    phone: "+91 xxxxx xxxxx", // Obfuscated for initial view until deep open
+                    hzlrId: `HZLR-WK-${w.id.slice(-4).toUpperCase()}`,
+                    photoUrl: "",
+                    reliabilityScore: w.rating * 20, 
+                    totalGigs: w.gigsCompletedForMe,
+                    lastWorkedDate: new Date(w.joinDate).toISOString().split('T')[0],
+                    lastActiveDate: new Date(w.joinDate).toISOString().split('T')[0],
+                    groomingVerified: w.verified,
+                    identityVerified: w.verified,
+                    preferredCategory: w.role,
+                    categories: [w.role],
+                    avgRating: w.rating,
+                    onTimePercentage: 95,
+                    cancellationCount: 0,
+                    totalEarned: 0
+                 }));
+                 setLiveEmployees(mapped);
+             }
+         } catch(e) {
+             toast({ title: "Failed to sync pipeline", variant: "destructive" });
+         } finally {
+             setLoading(false);
+         }
+     };
+     fetchEmployees();
+  }, [toast]);
 
   const filteredEmployees = useMemo(() => {
-    return mockEmployees.filter((emp) => {
+    return liveEmployees.filter((emp) => {
       // Search filter
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
@@ -88,7 +133,7 @@ export default function Employees() {
 
       return true;
     });
-  }, [filters]);
+  }, [filters, liveEmployees]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -144,8 +189,12 @@ export default function Employees() {
   return (
     <EmployerLayout title="Employee Management">
       <div className="p-6 space-y-6 pb-24 md:pb-6">
-        {/* Filters */}
-        <EmployeeFilters
+        {loading ? (
+           <div className="flex justify-center p-10"><Loader2 className="animate-spin text-primary w-8 h-8" /></div>
+        ) : (
+           <>
+             {/* Filters */}
+             <EmployeeFilters
           filters={filters}
           onFiltersChange={setFilters}
           onExport={handleExportCSV}
@@ -168,6 +217,8 @@ export default function Employees() {
           onSelectAll={handleSelectAll}
           onSelectOne={handleSelectOne}
         />
+        </>
+        )}
       </div>
     </EmployerLayout>
   );
