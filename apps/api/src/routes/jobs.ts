@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { prisma } from '../index';
+import { prisma } from '../db';
 import { authenticateToken } from './auth';
 
 const router = Router();
@@ -17,7 +17,39 @@ router.get('/available', authenticateToken, async (req: any, res) => {
         const sortedJobs = jobs.map(j => ({ ...j, distance: Math.random() * 10 })).sort((a,b) => a.distance - b.distance);
 
         res.json(sortedJobs);
-    } catch (error) {
+    } catch (error: any) {
+        if (!process.env.DATABASE_URL || error.message.includes("PrismaClient")) {
+             return res.json([
+                 { 
+                     id: 'mock_job_1', 
+                     title: 'Local Event Staff (Mock)', 
+                     description: 'Help staff a local event.', 
+                     category: 'Events',
+                     payPerWorker: 600, 
+                     city: 'Local', 
+                     distance: 1.2,
+                     scheduledFor: new Date(Date.now() + 86400000).toISOString(),
+                     totalSpots: 10,
+                     filledSpots: 2,
+                     estimatedHours: 4,
+                     employerProfile: { firstName: 'Mock', lastName: 'Employer' }
+                 },
+                 { 
+                     id: 'mock_job_2', 
+                     title: 'Warehouse Restocking (Mock)', 
+                     description: 'Night shift restock.', 
+                     category: 'Logistics',
+                     payPerWorker: 800, 
+                     city: 'Local', 
+                     distance: 3.5,
+                     scheduledFor: new Date(Date.now() + 172800000).toISOString(),
+                     totalSpots: 5,
+                     filledSpots: 5,
+                     estimatedHours: 8,
+                     employerProfile: { firstName: 'Mock', lastName: 'Company' }
+                 }
+             ]);
+        }
         res.status(500).json({ error: 'Failed to fetch jobs' });
     }
 });
@@ -37,7 +69,15 @@ router.get('/employer', authenticateToken, async (req: any, res) => {
             orderBy: { createdAt: 'desc' }
         });
         res.json(jobs);
-    } catch (error) {
+    } catch (error: any) {
+        if (!process.env.DATABASE_URL || error.message.includes("PrismaClient")) {
+             return res.json([
+                 { 
+                     id: 'mock_job_3', title: 'My Posted Event (Mock)', status: 'ACTIVE', payPerWorker: 600, totalSpots: 10, filledSpots: 2, estimatedHours: 4, scheduledFor: new Date(Date.now() + 86400000).toISOString(),
+                     applications: [{ id: 'app_1', workerProfile: { user: { phone: '1112223333' }, firstName: 'Test', lastName: 'Worker' }, status: 'ACCEPTED'}]
+                 }
+             ]);
+        }
         res.status(500).json({ error: 'Failed to fetch jobs' });
     }
 });

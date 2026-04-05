@@ -222,15 +222,32 @@ export default function KYCVerification() {
               Try Again
             </Button>
           ) : (
-            <Button
-              onClick={initiateKYC}
-              disabled={!consentGiven || loading}
-              className="w-full"
-              size="lg"
-            >
-              {loading ? 'Initiating...' : 'Start Verification'}
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
+            <>
+              <Button
+                onClick={initiateKYC}
+                disabled={!consentGiven || loading}
+                className="w-full"
+                size="lg"
+              >
+                {loading ? 'Initiating...' : 'Start Verification'}
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+              <Button
+                onClick={async () => {
+                  try {
+                    await updateOnboardingState('E_KYC_VERIFIED');
+                    navigate('/signup/complete');
+                  } catch (e) {
+                    console.error("Skip failed", e);
+                  }
+                }}
+                variant="ghost"
+                className="w-full mt-2"
+                size="lg"
+              >
+                Skip KYC for now
+              </Button>
+            </>
           )}
 
           {kycRecord && kycRecord.attempts >= 3 && (

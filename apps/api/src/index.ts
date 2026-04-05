@@ -9,7 +9,6 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-export const prisma = new PrismaClient();
 
 app.use(cors());
 app.use(express.json());
@@ -51,6 +50,10 @@ app.get('/', (req, res) => {
     res.send('HZLR API is running');
 });
 
-httpServer.listen(Number(PORT), '0.0.0.0', () => {
-    console.log(`Server is running natively on port ${PORT}`);
-});
+export { app, httpServer };
+
+if (process.env.NODE_ENV !== 'test') {
+    httpServer.listen(Number(PORT), '0.0.0.0', () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}
