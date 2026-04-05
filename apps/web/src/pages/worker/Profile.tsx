@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { WorkerLayout } from "@/components/worker/WorkerLayout";
 import { TicketModal } from "@/components/shared/TicketModal";
@@ -24,7 +25,9 @@ export default function WorkerProfile() {
      firstName: profile?.firstName || profile?.full_name?.split(' ')[0] || "",
      lastName: profile?.lastName || profile?.full_name?.split(' ')[1] || "",
      username: profile?.username || "",
-     phone: profile?.phone || user?.phone || ""
+     phone: profile?.phone || user?.phone || "",
+     address: profile?.address || "",
+     education: profile?.education || ""
   });
 
   // Dynamic Identity Parsing
@@ -57,8 +60,10 @@ export default function WorkerProfile() {
              username: editData.username,
              firstName: editData.firstName,
              lastName: editData.lastName,
-             phone: editData.phone
-         });
+             phone: editData.phone,
+             address: editData.address,
+             education: editData.education
+         } as any);
          toast({ title: 'Profile Updated', description: 'Your identity has been saved securely to the database!' });
          setEditOpen(false);
      } catch (e: any) {
@@ -116,6 +121,22 @@ export default function WorkerProfile() {
                    <div className="space-y-1.5">
                       <Label>Phone Number</Label>
                       <Input value={editData.phone} onChange={(e) => setEditData({...editData, phone: e.target.value})} placeholder="+91 99999 99999" />
+                   </div>
+                   <div className="space-y-1.5">
+                      <Label>Primary Location (City)</Label>
+                      <Input value={editData.address} onChange={(e) => setEditData({...editData, address: e.target.value})} placeholder="Bangalore, Phase 1" />
+                   </div>
+                   <div className="space-y-1.5">
+                      <Label>Highest Education</Label>
+                      <Select value={editData.education} onValueChange={(v) => setEditData({...editData, education: v})}>
+                         <SelectTrigger><SelectValue placeholder="Select education" /></SelectTrigger>
+                         <SelectContent>
+                             <SelectItem value="high_school">High School</SelectItem>
+                             <SelectItem value="diploma">Diploma</SelectItem>
+                             <SelectItem value="bachelors">Bachelors Degree</SelectItem>
+                             <SelectItem value="masters">Masters Degree</SelectItem>
+                         </SelectContent>
+                      </Select>
                    </div>
                    <Button onClick={handleSaveProfile} disabled={editSaving} className="w-full mt-4 font-bold shadow-lg" size="lg">
                        {editSaving ? <Loader2 className="animate-spin mr-2" size={18} /> : null}

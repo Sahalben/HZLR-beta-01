@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { WorkerLayout } from "@/components/worker/WorkerLayout";
 import { GigCard } from "@/components/shared/GigCard";
 import { ApplicationModal } from "@/components/shared/ApplicationModal";
+import { LocationMap } from "@/components/worker/LocationMap";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -209,20 +210,11 @@ export default function WorkerHome() {
            </Card>
         </div>
 
-        {/* Find Jobs from Map */}
-        <Link to="/worker/search?view=map" className="block transform hover:scale-[1.02] transition-transform">
-          <Card variant="outline" className="p-0 overflow-hidden border-0 shadow-md">
-            <div className="relative h-32 bg-zinc-900">
-              <div className="absolute inset-0 bg-[url('https://maps.googleapis.com/maps/api/staticmap?center=Mumbai&zoom=14&size=400x200&style=feature:all|element:labels|visibility:off&style=feature:water|color:0x1a1a1a&style=feature:landscape|color:0x222222&key=placeholder')] bg-cover opacity-60" />
-              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/80 to-transparent">
-                <div className="bg-seafoam text-zinc-900 px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-xl shadow-seafoam/20">
-                  <MapPin size={18} />
-                  Radar Map View
-                </div>
-              </div>
-            </div>
-          </Card>
-        </Link>
+        {/* Dynamic Find Jobs from Map */}
+        <div>
+           <h3 className="font-bold text-lg text-foreground mb-3 tracking-tight">Active Radar</h3>
+           <LocationMap jobs={availableJobs} onApply={handleApply} />
+        </div>
 
         {/* Available Gigs Feed */}
         <div>

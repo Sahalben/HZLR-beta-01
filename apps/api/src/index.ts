@@ -38,6 +38,7 @@ import walletRoutes from './routes/wallets';
 import kycRoutes from './routes/kyc';
 import messagesRoutes from './routes/messages';
 import attendanceRoutes from './routes/attendance';
+import notificationsRoutes from './routes/notifications';
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/jobs', jobRoutes);
@@ -46,6 +47,7 @@ app.use('/api/v1/wallets', walletRoutes);
 app.use('/api/v1/kyc', kycRoutes);
 app.use('/api/v1/messages', messagesRoutes);
 app.use('/api/v1/attendance', attendanceRoutes);
+app.use('/api/v1/notifications', notificationsRoutes);
 
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
