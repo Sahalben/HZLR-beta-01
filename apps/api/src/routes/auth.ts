@@ -179,15 +179,17 @@ router.post('/profile', authenticateToken, async (req: any, res) => {
         let user = await prisma.user.findUnique({ where: { id: req.user.id } });
         if(!user) return res.status(400).json({ error: 'User missing' });
 
-        // Update the base User role if they just selected it in onboarding
-        if (updates.role) {
-            const newRole = updates.role.toUpperCase();
-            if (newRole !== user.role && (newRole === 'WORKER' || newRole === 'EMPLOYER')) {
-                user = await prisma.user.update({
-                    where: { id: user.id },
-                    data: { role: newRole }
-                });
-            }
+        // Handle basic User updates (username, phone, role)
+        const updatedUserData: any = {};
+        if (updates.role) updatedUserData.role = updates.role.toUpperCase();
+        if (updates.username) updatedUserData.username = updates.username.toLowerCase();
+        if (updates.phone) updatedUserData.phone = updates.phone;
+
+        if (Object.keys(updatedUserData).length > 0) {
+            user = await prisma.user.update({
+                where: { id: user.id },
+                data: updatedUserData
+            });
         }
 
         if (user.role === 'WORKER') {
@@ -196,6 +198,9 @@ router.post('/profile', authenticateToken, async (req: any, res) => {
                 update: {
                     firstName: updates.full_name?.split(' ')[0] || '',
                     lastName: updates.full_name?.split(' ')[1] || '',
+                    address: updates.address,
+                    education: updates.education,
+                    age: updates.age,
                     categories: updates.preferred_categories,
                     latitude: updates.location_lat,
                     longitude: updates.location_lng,
@@ -204,6 +209,9 @@ router.post('/profile', authenticateToken, async (req: any, res) => {
                     userId: user.id,
                     firstName: updates.full_name?.split(' ')[0] || '',
                     lastName: updates.full_name?.split(' ')[1] || '',
+                    address: updates.address,
+                    education: updates.education,
+                    age: updates.age,
                     categories: updates.preferred_categories || [],
                     latitude: updates.location_lat,
                     longitude: updates.location_lng,

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Briefcase, User, Mail, Lock, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, ArrowRight, Briefcase, User, Mail, Lock, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,17 +9,35 @@ import { useAuth } from "@/contexts/AuthContext";
 
 type UserRole = "worker" | "employer" | null;
 
+const getPasswordStrength = (pass: string) => {
+  let score = 0;
+  if (!pass) return { score: 0, text: '', color: 'bg-muted' };
+  if (pass.length > 7) score += 1;
+  if (/[A-Z]/.test(pass)) score += 1;
+  if (/[0-9]/.test(pass)) score += 1;
+  if (/[^A-Za-z0-9]/.test(pass)) score += 1;
+
+  if (score < 2) return { score, text: 'Weak', color: 'bg-destructive' };
+  if (score < 4) return { score, text: 'Medium', color: 'bg-yellow-500' };
+  return { score, text: 'Strong', color: 'bg-success' };
+};
+
 export default function Signup() {
   const navigate = useNavigate();
   const [role, setRole] = useState<UserRole>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { signupWithEmail } = useAuth();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!role) return;
+    if (password !== confirmPassword) {
+      toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
+      return;
+    }
 
     setLoading(true);
     try {
@@ -28,7 +46,8 @@ export default function Signup() {
         title: "Account Created",
         description: "Welcome to HZLR!",
       });
-      navigate(role === "worker" ? "/worker/home" : "/employer/home");
+      // Redirect to the new multi-step profile builder
+      navigate("/signup/profile");
     } catch (error: any) {
       toast({
         title: "Error",
@@ -39,6 +58,8 @@ export default function Signup() {
       setLoading(false);
     }
   };
+
+  const strength = getPasswordStrength(password);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -68,7 +89,7 @@ export default function Signup() {
               {role ? "Create Account" : "Get Started"}
             </h1>
             <p className="text-muted-foreground mt-2">
-              {role ? "Enter your email and password" : "Choose how you want to use HZLR"}
+              {role ? "Enter your email and a strong password" : "Choose how you want to use HZLR"}
             </p>
           </div>
 
@@ -146,6 +167,41 @@ export default function Signup() {
                       className="pl-10"
                     />
                   </div>
+                  
+                  {/* Strength Meter */}
+                  {password.length > 0 && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className="flex-1 flex gap-1 h-1.5 rounded-full overflow-hidden bg-muted">
+                        <div className={`h-full ${strength.score >= 1 ? strength.color : 'bg-transparent'} w-1/4 transition-colors duration-300`} />
+                        <div className={`h-full ${strength.score >= 2 ? strength.color : 'bg-transparent'} w-1/4 transition-colors duration-300`} />
+                        <div className={`h-full ${strength.score >= 3 ? strength.color : 'bg-transparent'} w-1/4 transition-colors duration-300`} />
+                        <div className={`h-full ${strength.score >= 4 ? strength.color : 'bg-transparent'} w-1/4 transition-colors duration-300`} />
+                      </div>
+                      <span className={`text-xs font-semibold ${strength.color.replace('bg-', 'text-')}`}>
+                        {strength.text}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Retype Password
+                  </label>
+                  <div className="relative">
+                    <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      type="password"
+                      required
+                      placeholder="Confirm your password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="pl-10"
+                    />
+                    {confirmPassword.length > 0 && password === confirmPassword && (
+                      <CheckCircle2 size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-success" />
+                    )}
+                  </div>
                 </div>
 
                 <Button
@@ -153,7 +209,7 @@ export default function Signup() {
                   variant="default"
                   size="lg"
                   className="w-full mt-4"
-                  disabled={loading || !email || password.length < 8}
+                  disabled={loading || !email || password.length < 8 || password !== confirmPassword}
                 >
                   {loading ? (
                     <Loader2 size={20} className="animate-spin" />
