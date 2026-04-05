@@ -41,6 +41,8 @@ interface AuthContextType {
   updateOnboardingState: (newState: OnboardingState) => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
   loginWithOtp: (phone: string, otp: string) => Promise<void>;
+  loginWithEmail: (email: string, password: string) => Promise<void>;
+  signupWithEmail: (email: string, password: string, role: UserRole) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -98,6 +100,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginWithEmail = async (email: string, password: string) => {
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+    const res = await fetch(`${API_URL}/api/v1/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+      await refreshProfile();
+    } else {
+      throw new Error(data.error || 'Login failed');
+    }
+  };
+
+  const signupWithEmail = async (email: string, password: string, role: string) => {
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+    const res = await fetch(`${API_URL}/api/v1/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, role: role.toUpperCase() })
+    });
+    const data = await res.json();
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+      await refreshProfile();
+    } else {
+      throw new Error(data.error || 'Signup failed');
+    }
+  };
+
   const updateOnboardingState = useCallback(async (newState: OnboardingState) => {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
     await fetch(`${API_URL}/api/v1/auth/onboarding`, {
@@ -140,7 +174,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refreshProfile,
         updateOnboardingState,
         updateProfile,
-        loginWithOtp
+        loginWithOtp,
+        loginWithEmail,
+        signupWithEmail
       }}
     >
       {children}
