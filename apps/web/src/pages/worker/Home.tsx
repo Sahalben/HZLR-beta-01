@@ -1,112 +1,76 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  Wallet,
-  Bell,
-  Search,
-  User,
-  BadgeCheck,
-  TrendingUp,
-  Calendar,
-  MapPin,
-  Briefcase,
-  Sparkles,
-  ChevronRight,
-} from "lucide-react";
+import { Wallet, Bell, Search, User, BadgeCheck, TrendingUp, Calendar, MapPin, Briefcase, Sparkles, ChevronRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { WorkerLayout } from "@/components/worker/WorkerLayout";
-import { ReliabilityScore } from "@/components/shared/ReliabilityScore";
 import { GigCard } from "@/components/shared/GigCard";
 import { ApplicationModal } from "@/components/shared/ApplicationModal";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
-// Mock data
-const mockUser = {
-  name: "Priya Sharma",
-  reliabilityScore: 94,
-  gigsCompleted: 47,
-  avgPay: "₹850",
-  verified: true,
-  groomingCertified: true,
-  history: {
-    completions: 47,
-    cancellations: 2,
-    punctualityRate: 96,
-    averageRating: 4.8,
-  },
-};
-
-const mockWallet = {
-  available: 28350,
-  pending: 850,
-};
-
-const mockUpcoming = [
-  {
-    id: 101,
-    title: "Kitchen Staff",
-    employer: "Taj Palace",
-    pay: 950,
-    date: "Today, 7 AM",
-    status: "confirmed" as const,
-  },
-];
-
 const gigCategories = [
+  { id: "fnb", name: "F&B Service", icon: "🍽️", color: "bg-amber-500" },
   { id: "housekeeping", name: "House Keeping", icon: "🧹", color: "bg-teal-500" },
   { id: "plumbing", name: "Plumbing", icon: "🔧", color: "bg-orange-500" },
   { id: "driving", name: "Driving", icon: "🚗", color: "bg-blue-500" },
-  { id: "fnb", name: "F&B Service", icon: "🍽️", color: "bg-amber-500" },
   { id: "events", name: "Events", icon: "🎉", color: "bg-purple-500" },
 ];
 
 const longTermJobs = [
-  "Cashier",
-  "Barista", 
-  "Shawarma maker",
-  "Chef",
-  "Shopkeeper",
+  "Cashier at Reliance Fresh",
+  "Barista at Third Wave", 
+  "Restaurant Manager",
+  "Data Entry Executive",
 ];
 
 export default function WorkerHome() {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
+  
+  // Dynamic Unmocked State
   const [readyToWork, setReadyToWork] = useState(true);
   const [availableJobs, setAvailableJobs] = useState<any[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [walletPending, setWalletPending] = useState(0);
 
-  const [applicationModal, setApplicationModal] = useState<{
-    open: boolean;
-    gig: any | null;
-    type: "apply" | "queue";
-  }>({ open: false, gig: null, type: "apply" });
+  const [applicationModal, setApplicationModal] = useState<{ open: boolean; gig: any | null; type: "apply" | "queue" }>({ open: false, gig: null, type: "apply" });
 
   useEffect(() => {
-    const fetchJobs = async () => {
+    const initDashboard = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || '';
-        const res = await fetch(`${API_URL}/api/v1/jobs/available`, {
-           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
-        if(res.ok) {
-           const data = await res.json();
-           setAvailableJobs(data);
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+        
+        // Parallel map fetching for dashboard hydration
+        const [jobsRes, walletRes] = await Promise.all([
+             fetch(`${API_URL}/api/v1/jobs/available`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }}),
+             fetch(`${API_URL}/api/v1/wallets/${user?.id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }})
+        ]);
+
+        if(jobsRes.ok) {
+           const data = await jobsRes.json();
+           setAvailableJobs(Array.isArray(data) ? data : []);
         }
-      } catch (e) { console.error(e); } finally { setLoadingJobs(false); }
+        
+        if(walletRes.ok) {
+           const wData = await walletRes.json();
+           setWalletBalance(wData.balance || 0);
+           setWalletPending(wData.pendingBalance || 0);
+        }
+      } catch (e) {
+          console.error("Dashboard hydration error", e);
+      } finally { 
+          setLoadingJobs(false); 
+      }
     };
-    fetchJobs();
-  }, []);
+    
+    if (user?.id) initDashboard();
+  }, [user]);
 
-  const handleApply = (gig: any) => {
-    setApplicationModal({ open: true, gig, type: "apply" });
-  };
-
-  const handleJoinQueue = (gig: any) => {
-    setApplicationModal({ open: true, gig, type: "queue" });
-  };
+  const handleApply = (gig: any) => { setApplicationModal({ open: true, gig, type: "apply" }); };
+  const handleJoinQueue = (gig: any) => { setApplicationModal({ open: true, gig, type: "queue" }); };
 
   const handleConfirmApplication = async () => {
     try {
@@ -130,272 +94,180 @@ export default function WorkerHome() {
         toast({
           title: "Application Submitted",
           description: data.status === 'QUEUED' ? "You've been added to the backup queue." : "Your application has been accepted!",
+          className: "bg-success text-white border-0"
         });
         setApplicationModal({ open: false, gig: null, type: "apply" });
     } catch(e: any) {
-        toast({ title: "Error", description: e.message, variant: "destructive" });
+        toast({ title: "Verification Needed", description: "You might need to complete KYC before applying to high-yield jobs.", variant: "destructive" });
     }
   };
 
-  const handleWithdraw = () => {
-    toast({
-      title: "Withdrawal Requested",
-      description: "Your funds will be transferred within 24 hours.",
-    });
-  };
+  const nameTag = profile?.username || profile?.full_name?.split(' ')[0] || "Worker";
 
   return (
     <WorkerLayout showHeader={false}>
-      {/* Custom Header with Stats */}
-      <header className="bg-primary text-primary-foreground px-4 pt-12 pb-8">
-        <div className="flex items-center justify-between mb-6">
+      {/* Dynamic Master Header */}
+      <header className="bg-foreground text-background px-4 pt-12 pb-8 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA0MCAwIEwgMCAwIDAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjAuNSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-[0.03]" />
+        
+        <div className="relative flex items-center justify-between mb-8">
           <div>
-            <p className="text-sm text-primary-foreground/70">Good morning,</p>
-            <h1 className="text-2xl font-bold">{profile?.full_name || 'Worker'}</h1>
+            <p className="text-sm text-background/60 font-medium tracking-wide uppercase">Welcome back</p>
+            <h1 className="text-3xl font-black mt-1">{nameTag}</h1>
           </div>
-          <Link to="/worker/notifications" className="relative">
-            <Bell size={24} />
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-success rounded-full" />
+          <Link to="/worker/notifications" className="relative p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors">
+            <Bell size={22} className="text-white" />
+            <span className="absolute top-1 right-2 w-2.5 h-2.5 bg-success border-2 border-foreground rounded-full" />
           </Link>
         </div>
 
-        {/* Profile Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        {/* Dynamic Profile Stats */}
+        <div className="relative grid grid-cols-3 gap-3 mb-6 bg-white/5 backdrop-blur-sm p-4 rounded-2xl border border-white/10">
           <div className="text-center">
-            <ReliabilityScore 
-              score={100} 
-              history={mockUser.history}
-              size="md"
-            />
-            <p className="text-xs text-primary-foreground/60 mt-1">Reliability</p>
+            <span className="text-2xl font-black text-seafoam">{profile?.reliabilityScore || 0}%</span>
+            <p className="text-xs text-background/60 mt-1 uppercase font-bold tracking-wider">Reliability</p>
           </div>
-          <div className="text-center">
-            <span className="text-xl font-bold">0</span>
-            <p className="text-xs text-primary-foreground/60">Gigs Done</p>
+          <div className="text-center border-l border-white/10">
+            <span className="text-2xl font-bold">{profile?.totalGigsDone || 0}</span>
+            <p className="text-xs text-background/60 mt-1 uppercase font-bold tracking-wider">Gigs Done</p>
           </div>
-          <div className="text-center">
-            <span className="text-xl font-bold">₹0</span>
-            <p className="text-xs text-primary-foreground/60">Avg Pay</p>
+          <div className="text-center border-l border-white/10">
+            <span className="text-2xl font-bold text-amber-400">₹{profile?.avgPay || 0}</span>
+            <p className="text-xs text-background/60 mt-1 uppercase font-bold tracking-wider">Avg Pay</p>
           </div>
         </div>
 
         {/* Badges */}
-        <div className="flex items-center gap-2">
-          {(profile as any)?._aadhaarVerified && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-info/20 text-xs text-info">
-              <BadgeCheck size={12} /> Aadhaar Verified
+        <div className="relative flex items-center gap-2">
+          {profile?.aadhaarVerified && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-info/20 text-xs font-bold text-info border border-info/30">
+              <BadgeCheck size={14} /> ID Verified
             </span>
           )}
-          {(profile as any)?._groomingCertified && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-success/20 text-xs text-success">
-              <TrendingUp size={12} /> Grooming Certified
+          {profile?.groomingCertified && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-success/20 text-xs font-bold text-success border border-success/30">
+              <TrendingUp size={14} /> Certified Pro
             </span>
           )}
         </div>
       </header>
 
-      <div className="px-4 -mt-4 space-y-6 pb-8">
-        {/* Ready Toggle */}
-        <Card variant="elevated" className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-foreground">Ready to Work</h3>
-              <p className="text-sm text-muted-foreground">Receive gig notifications</p>
-            </div>
-            <button
-              onClick={() => setReadyToWork(!readyToWork)}
-              className={cn(
-                "w-14 h-8 rounded-full transition-colors relative",
-                readyToWork ? "bg-success" : "bg-muted"
-              )}
-            >
-              <span
-                className={cn(
-                  "absolute top-1 w-6 h-6 rounded-full bg-primary-foreground shadow transition-transform",
-                  readyToWork ? "left-7" : "left-1"
-                )}
-              />
-            </button>
-          </div>
-        </Card>
-
-        {/* Wallet Card */}
-        <Card variant="mint" className="relative overflow-hidden">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">HZLR Wallet</p>
-              <h2 className="text-3xl font-black text-foreground">
-                ₹{mockWallet.available.toLocaleString()}
-              </h2>
-            </div>
-            <Wallet size={24} className="text-seafoam" />
-          </div>
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Pending: ₹{mockWallet.pending.toLocaleString()}
-            </p>
-        <Button variant="default" size="sm" onClick={handleWithdraw}>
-              Withdraw
-            </Button>
-          </div>
+      <div className="px-4 -mt-4 space-y-6 pb-8 relative z-10">
+        
+        {/* Unmocked Wallet Card (Displays 0 by default) */}
+        <Card className="p-0 border-0 shadow-2xl overflow-hidden bg-gradient-to-br from-teal-500 to-emerald-600">
+           <div className="p-5 text-white">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm font-semibold opacity-90 tracking-wide uppercase">Hzlr Wallet</p>
+                <div className="bg-white/20 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest backdrop-blur-md">Secure</div>
+              </div>
+              
+              <div className="flex items-end justify-between">
+                  <div>
+                      <div className="text-4xl font-black tracking-tighter mb-1 relative">
+                          <span className="text-2xl opacity-60 absolute -left-4 top-1">₹</span>
+                          {Math.round(walletBalance).toLocaleString()}
+                      </div>
+                      <p className="text-xs opacity-70 font-medium">Pending: ₹{Math.round(walletPending).toLocaleString()}</p>
+                  </div>
+                  
+                  <Button variant="secondary" size="sm" className="font-bold shadow-lg" asChild>
+                      <Link to="/worker/wallet">Activate UPI</Link>
+                  </Button>
+              </div>
+           </div>
         </Card>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { icon: Search, label: "Find Gigs", href: "/worker/search" },
-            { icon: Calendar, label: "My Gigs", href: "/worker/my-gigs" },
-            { icon: User, label: "Profile", href: "/worker/profile" },
+            { icon: Search, label: "Find Gigs", href: "/worker/search", bg: "bg-blue-500/10 text-blue-600" },
+            { icon: Calendar, label: "My Gigs", href: "/worker/my-gigs", bg: "bg-purple-500/10 text-purple-600" },
+            { icon: User, label: "Profile", href: "/worker/profile", bg: "bg-amber-500/10 text-amber-600" },
           ].map((action) => {
             const Icon = action.icon;
             return (
               <Link key={action.label} to={action.href}>
-                <Card variant="outline" className="p-4 text-center hover:bg-secondary/50 transition-colors">
-                  <Icon size={24} className="mx-auto mb-2 text-seafoam" />
-                  <span className="text-sm font-medium text-foreground">{action.label}</span>
+                <Card className="p-4 text-center hover:bg-secondary/20 transition-colors border-0 shadow-sm flex flex-col items-center">
+                  <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center mb-2", action.bg)}>
+                     <Icon size={22} className="stroke-[2.5]" />
+                  </div>
+                  <span className="text-[11px] font-bold text-foreground tracking-wide uppercase">{action.label}</span>
                 </Card>
               </Link>
             );
           })}
         </div>
 
-        {/* Upcoming Gig */}
-        {mockUpcoming.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-foreground">Upcoming</h3>
-              <Link to="/worker/my-gigs" className="text-sm text-seafoam font-medium">
-                View all
-              </Link>
-            </div>
-            {mockUpcoming.map((gig) => (
-              <GigCard
-                key={gig.id}
-                {...gig}
-                status={gig.status}
-                onCheckIn={() => navigate("/worker/checkin")}
-              />
-            ))}
-          </div>
-        )}
+        {/* Active Upcoming Gigs Module (Zero State) */}
+        <div>
+           <h3 className="font-bold text-lg text-foreground mb-3 tracking-tight">Active Upcoming</h3>
+           <Card className="p-5 border-dashed border-2 bg-transparent text-center shadow-none hover:bg-secondary/10 transition-colors">
+               <Calendar className="w-10 h-10 mx-auto text-muted-foreground opacity-30 mb-2" />
+               <p className="font-semibold text-foreground text-sm">Your schedule is clear</p>
+               <p className="text-xs text-muted-foreground mt-1 max-w-[200px] mx-auto leading-relaxed">You haven't been confirmed for any shifts yet. Apply to nearby gigs to get started!</p>
+           </Card>
+        </div>
 
         {/* Find Jobs from Map */}
-        <Link to="/worker/search?view=map">
-          <Card variant="outline" className="p-0 overflow-hidden group">
-            <div className="relative h-32 bg-gradient-to-br from-secondary to-muted">
-              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjY2NjIiBzdHJva2Utd2lkdGg9IjAuNSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-semibold flex items-center gap-2 group-hover:scale-105 transition-transform">
+        <Link to="/worker/search?view=map" className="block transform hover:scale-[1.02] transition-transform">
+          <Card variant="outline" className="p-0 overflow-hidden border-0 shadow-md">
+            <div className="relative h-32 bg-zinc-900">
+              <div className="absolute inset-0 bg-[url('https://maps.googleapis.com/maps/api/staticmap?center=Mumbai&zoom=14&size=400x200&style=feature:all|element:labels|visibility:off&style=feature:water|color:0x1a1a1a&style=feature:landscape|color:0x222222&key=placeholder')] bg-cover opacity-60" />
+              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/80 to-transparent">
+                <div className="bg-seafoam text-zinc-900 px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-xl shadow-seafoam/20">
                   <MapPin size={18} />
-                  Find jobs from maps
+                  Radar Map View
                 </div>
               </div>
             </div>
           </Card>
         </Link>
 
-        {/* Explore Gigs Categories */}
+        {/* Available Gigs Feed */}
         <div>
-          <h3 className="font-semibold text-foreground mb-3">Explore gigs</h3>
-          <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-            {gigCategories.map((cat) => (
-              <Link 
-                key={cat.id} 
-                to={`/worker/search?category=${cat.id}`}
-                className="flex-shrink-0"
-              >
-                <Card variant="outline" className="w-28 h-20 p-3 flex flex-col items-center justify-center hover:bg-secondary/50 transition-colors">
-                  <span className="text-2xl mb-1">{cat.icon}</span>
-                  <span className="text-xs font-medium text-foreground text-center leading-tight">{cat.name}</span>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Available Gigs */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-foreground">Available Near You</h3>
-            <Link to="/worker/search" className="text-sm text-seafoam font-medium">
-              See all
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-lg tracking-tight text-foreground">Nearby You</h3>
+            <Link to="/worker/search" className="text-xs font-bold text-seafoam uppercase tracking-wider hover:underline">
+              View Feed
             </Link>
           </div>
-          <div className="space-y-3">
-            {loadingJobs ? <p className="text-sm text-muted-foreground">Finding nearby jobs...</p> : availableJobs.length === 0 ? <p className="text-sm text-muted-foreground">No jobs available within your radius right now.</p> : availableJobs.map((gig) => (
-              <GigCard
-                key={gig.id}
-                id={gig.id}
-                title={gig.title}
-                employer={gig.employerProfile?.firstName ? gig.employerProfile.firstName + ' (Verified)' : 'Private Employer'}
-                pay={gig.payPerWorker}
-                date={new Date(gig.scheduledFor).toLocaleString()}
-                distance={gig.distance?.toFixed(1) + 'km' || '1km'}
-                prefunded={gig.isPrefunded}
-                spots={gig.totalSpots - (gig.filledSpots || 0)}
-                status={(gig.totalSpots - (gig.filledSpots || 0)) > 0 ? "available" : "available"}
-                onApply={() => handleApply(gig)}
-                onJoinQueue={() => handleJoinQueue(gig)}
-              />
-            ))}
+          <div className="space-y-4">
+            {loadingJobs ? (
+                <div className="py-8 text-center text-muted-foreground animate-pulse font-medium text-sm">Scanning coordinates...</div>
+            ) : availableJobs.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center bg-muted/50 p-4 rounded-xl">Area clear. No shifts inside your radius right now.</p>
+            ) : (
+                availableJobs.map((gig) => (
+                <GigCard
+                    key={gig.id}
+                    id={gig.id}
+                    title={gig.title}
+                    employer={gig.employerProfile?.businessName || gig.employerProfile?.firstName ? `${gig.employerProfile.firstName} (Verified)` : 'Confidential Entity'}
+                    pay={gig.payPerWorker}
+                    date={new Date(gig.scheduledFor).toLocaleString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' })}
+                    distance={gig.distance?.toFixed(1) + 'km' || '< 1km'}
+                    prefunded={gig.isPrefunded}
+                    spots={gig.totalSpots - (gig.filledSpots || 0)}
+                    status={(gig.totalSpots - (gig.filledSpots || 0)) > 0 ? "available" : "available"}
+                    onApply={() => handleApply(gig)}
+                    onJoinQueue={() => handleJoinQueue(gig)}
+                />
+            )))}
           </div>
         </div>
-
-        {/* Classified Ads */}
-        <Link to="/worker/classified-ads">
-          <Card className="relative overflow-hidden bg-gradient-to-br from-zinc-800 to-zinc-900 text-white border-0">
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImRvdHMiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2RvdHMpIi8+PC9zdmc+')] opacity-50" />
-            <div className="relative p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles size={18} className="text-amber-400" />
-                <h3 className="font-bold text-lg">Classified Ads</h3>
-              </div>
-              <p className="text-sm text-zinc-300 mb-4 leading-relaxed">
-                Explore classified Ads from companies that offer temporary jobs.
-              </p>
-              <Button variant="secondary" size="sm" className="font-semibold">
-                Show Ads
-              </Button>
-            </div>
-          </Card>
-        </Link>
-
-        {/* Long Term Jobs */}
-        <Link to="/worker/long-term-jobs">
-          <Card className="relative overflow-hidden bg-gradient-to-br from-amber-900 to-amber-950 text-white border-0">
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImRvdHMiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2RvdHMpIi8+PC9zdmc+')] opacity-50" />
-            <div className="relative p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Briefcase size={18} className="text-amber-300" />
-                <h3 className="font-bold text-lg">Long term jobs</h3>
-              </div>
-              <ul className="space-y-1 mb-4">
-                {longTermJobs.map((job) => (
-                  <li key={job} className="text-sm text-amber-100 flex items-center gap-2">
-                    <ChevronRight size={14} className="text-amber-400" />
-                    {job}
-                  </li>
-                ))}
-              </ul>
-              <Button variant="secondary" size="sm" className="font-semibold">
-                Explore more
-              </Button>
-            </div>
-          </Card>
-        </Link>
       </div>
 
-      {/* Application Modal */}
       {applicationModal.gig && (
         <ApplicationModal
           open={applicationModal.open}
           onOpenChange={(open) => setApplicationModal({ ...applicationModal, open })}
           gig={applicationModal.gig ? {
             title: applicationModal.gig.title,
-            employer: applicationModal.gig.employerProfile?.firstName ? applicationModal.gig.employerProfile.firstName : 'Private Employer',
+            employer: applicationModal.gig.employerProfile?.firstName ? applicationModal.gig.employerProfile.firstName : 'Entity',
             pay: applicationModal.gig.payPerWorker,
             date: new Date(applicationModal.gig.scheduledFor).toLocaleString(),
-            distance: applicationModal.gig.distance?.toFixed(1) + 'km' || '1km',
+            distance: applicationModal.gig.distance?.toFixed(1) + 'km',
           } : { title: '', employer: '', pay: 0, date: '', distance: '' }}
           type={applicationModal.type}
           onConfirm={handleConfirmApplication}
