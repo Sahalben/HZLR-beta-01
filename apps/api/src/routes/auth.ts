@@ -193,22 +193,27 @@ router.post('/profile', authenticateToken, async (req: any, res) => {
         }
 
         if (user.role === 'WORKER') {
+            const updateWorkerData: any = {};
+            if (updates.firstName !== undefined) updateWorkerData.firstName = updates.firstName;
+            else if (updates.full_name !== undefined) updateWorkerData.firstName = updates.full_name.split(' ')[0] || '';
+            
+            if (updates.lastName !== undefined) updateWorkerData.lastName = updates.lastName;
+            else if (updates.full_name !== undefined) updateWorkerData.lastName = updates.full_name.split(' ')[1] || '';
+
+            if (updates.address !== undefined) updateWorkerData.address = updates.address;
+            if (updates.education !== undefined) updateWorkerData.education = updates.education;
+            if (updates.age !== undefined) updateWorkerData.age = updates.age;
+            if (updates.preferred_categories !== undefined) updateWorkerData.categories = updates.preferred_categories;
+            if (updates.location_lat !== undefined) updateWorkerData.latitude = updates.location_lat;
+            if (updates.location_lng !== undefined) updateWorkerData.longitude = updates.location_lng;
+
             await prisma.workerProfile.upsert({
                 where: { userId: user.id },
-                update: {
-                    firstName: updates.full_name?.split(' ')[0] || '',
-                    lastName: updates.full_name?.split(' ')[1] || '',
-                    address: updates.address,
-                    education: updates.education,
-                    age: updates.age,
-                    categories: updates.preferred_categories,
-                    latitude: updates.location_lat,
-                    longitude: updates.location_lng,
-                },
+                update: updateWorkerData,
                 create: {
                     userId: user.id,
-                    firstName: updates.full_name?.split(' ')[0] || '',
-                    lastName: updates.full_name?.split(' ')[1] || '',
+                    firstName: updates.firstName || updates.full_name?.split(' ')[0] || '',
+                    lastName: updates.lastName || updates.full_name?.split(' ')[1] || '',
                     address: updates.address,
                     education: updates.education,
                     age: updates.age,
@@ -218,16 +223,20 @@ router.post('/profile', authenticateToken, async (req: any, res) => {
                 }
             });
         } else if (user.role === 'EMPLOYER') {
+             const updateEmployerData: any = {};
+             if (updates.firstName !== undefined) updateEmployerData.firstName = updates.firstName;
+             else if (updates.full_name !== undefined) updateEmployerData.firstName = updates.full_name.split(' ')[0] || '';
+             
+             if (updates.lastName !== undefined) updateEmployerData.lastName = updates.lastName;
+             else if (updates.full_name !== undefined) updateEmployerData.lastName = updates.full_name.split(' ')[1] || '';
+
              await prisma.employerProfile.upsert({
                 where: { userId: user.id },
-                update: {
-                    firstName: updates.full_name?.split(' ')[0] || '',
-                    lastName: updates.full_name?.split(' ')[1] || '',
-                },
+                update: updateEmployerData,
                 create: {
                     userId: user.id,
-                    firstName: updates.full_name?.split(' ')[0] || '',
-                    lastName: updates.full_name?.split(' ')[1] || '',
+                    firstName: updates.firstName || updates.full_name?.split(' ')[0] || '',
+                    lastName: updates.lastName || updates.full_name?.split(' ')[1] || '',
                 }
             });
              // We drop extra employer columns here locally to avoid noise, wait, companyName? 
