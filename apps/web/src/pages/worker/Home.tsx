@@ -28,11 +28,13 @@ const longTermJobs = [
 
 export default function WorkerHome() {
   const navigate = useNavigate();
-  const { profile, user } = useAuth();
+  const { profile: baseProfile, user } = useAuth();
+  const profile = baseProfile as any; // Cast to access native backend WorkerProfile metrics
   
   // Dynamic Unmocked State
   const [readyToWork, setReadyToWork] = useState(true);
   const [availableJobs, setAvailableJobs] = useState<any[]>([]);
+  const [upcomingJobs, setUpcomingJobs] = useState<any[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [walletBalance, setWalletBalance] = useState(0);
   const [walletPending, setWalletPending] = useState(0);
@@ -45,14 +47,19 @@ export default function WorkerHome() {
         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
         
         // Parallel map fetching for dashboard hydration
-        const [jobsRes, walletRes] = await Promise.all([
+        const [jobsRes, walletRes, upcomingRes] = await Promise.all([
              fetch(`${API_URL}/api/v1/jobs/available`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }}),
-             fetch(`${API_URL}/api/v1/wallets/${user?.id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }})
+             fetch(`${API_URL}/api/v1/wallets/${user?.id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }}),
+             fetch(`${API_URL}/api/v1/jobs/worker/upcoming`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }})
         ]);
 
         if(jobsRes.ok) {
            const data = await jobsRes.json();
            setAvailableJobs(Array.isArray(data) ? data : []);
+        }
+        if(upcomingRes.ok) {
+           const data = await upcomingRes.json();
+           setUpcomingJobs(Array.isArray(data) ? data : []);
         }
         
         if(walletRes.ok) {
@@ -200,14 +207,35 @@ export default function WorkerHome() {
           })}
         </div>
 
-        {/* Active Upcoming Gigs Module (Zero State) */}
+        {/* Active Upcoming Gigs Module */}
         <div>
-           <h3 className="font-bold text-lg text-foreground mb-3 tracking-tight">Active Upcoming</h3>
-           <Card className="p-5 border-dashed border-2 bg-transparent text-center shadow-none hover:bg-secondary/10 transition-colors">
-               <Calendar className="w-10 h-10 mx-auto text-muted-foreground opacity-30 mb-2" />
-               <p className="font-semibold text-foreground text-sm">Your schedule is clear</p>
-               <p className="text-xs text-muted-foreground mt-1 max-w-[200px] mx-auto leading-relaxed">You haven't been confirmed for any shifts yet. Apply to nearby gigs to get started!</p>
-           </Card>
+           <div className="flex items-center justify-between mb-3 text-foreground tracking-tight">
+               <h3 className="font-bold text-lg">Active Upcoming</h3>
+               <span className="text-[10px] font-black uppercase text-muted-foreground">{upcomingJobs.length} Secured</span>
+           </div>
+           
+           {upcomingJobs.length === 0 ? (
+               <Card className="p-5 border-dashed border-2 bg-transparent text-center shadow-none hover:bg-secondary/10 transition-colors">
+                   <Calendar className="w-10 h-10 mx-auto text-muted-foreground opacity-30 mb-2" />
+                   <p className="font-semibold text-foreground text-sm">Your schedule is clear</p>
+                   <p className="text-xs text-muted-foreground mt-1 max-w-[200px] mx-auto leading-relaxed">You haven't been confirmed for any shifts yet. Apply to nearby gigs to get started!</p>
+               </Card>
+           ) : (
+               <div className="space-y-3">
+                   {upcomingJobs.map((app) => (
+                       <Card key={app.id} className="p-0 overflow-hidden border border-emerald-500/30 shadow-xl shadow-emerald-500/10">
+                           <div className="bg-emerald-500 flex justify-between items-center px-4 py-2 text-white shadow-inner">
+                               <p className="text-[10px] uppercase font-black tracking-widest">{app.status}</p>
+                               <span className="text-xs font-bold">{new Date(app.job.scheduledFor).toLocaleDateString()}</span>
+                           </div>
+                           <div className="p-4 bg-card">
+                               <h4 className="font-black text-base text-foreground leading-tight tracking-tight mb-1">{app.job.title}</h4>
+                               <p className="text-xs text-muted-foreground font-medium flex items-center gap-1.5"><MapPin size={12} className="text-primary"/> {app.job.city || "Exact Address Processing"}</p>
+                           </div>
+                       </Card>
+                   ))}
+               </div>
+           )}
         </div>
 
         {/* Dynamic Find Jobs from Map */}
