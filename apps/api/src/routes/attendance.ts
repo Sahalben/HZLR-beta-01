@@ -52,46 +52,4 @@ router.get('/my-records', authenticateToken, async (req: any, res) => {
     }
 });
 
-// Retrieve all attendance records strictly mapped tracking Employer targets
-router.get('/employer-records', authenticateToken, async (req: any, res) => {
-    try {
-        if (req.user.role === 'WORKER') {
-            return res.status(403).json({ error: 'Denied map traversal' });
-        }
-
-        const profile = await prisma.employerProfile.findUnique({
-            where: { userId: req.user.id }
-        });
-        if (!profile) return res.status(404).json({ error: 'Config missing' });
-
-        const records = await prisma.attendance.findMany({
-            where: {
-                job: { employerProfileId: profile.id }
-            },
-            include: {
-                job: true,
-                workerProfile: true
-            },
-            orderBy: { createdAt: 'desc' }
-        });
-
-        const mapped = records.map(r => ({
-            id: r.id,
-            workerName: `${r.workerProfile.firstName} ${r.workerProfile.lastName}`,
-            gigTitle: r.job.title,
-            checkinTime: r.checkInTime,
-            checkoutTime: r.checkOutTime,
-            distanceFromGig: r.checkInDistance ? Math.round(r.checkInDistance) : null,
-            status: r.status.toLowerCase(),
-            reliabilityScore: r.workerProfile.reliabilityScore || 65,
-            latenessMinutes: r.checkInTime ? Math.round((new Date(r.checkInTime).getTime() - new Date(r.job.scheduledFor).getTime()) / 60000) : 0
-        }));
-
-        res.json(mapped);
-    } catch(err: any) {
-        if (!process.env.DATABASE_URL) return res.json([]);
-        res.status(500).json({ error: err.message });
-    }
-});
-
 export default router;

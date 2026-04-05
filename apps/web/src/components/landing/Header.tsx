@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { motion, useScroll, useTransform } from "framer-motion";
 
 const navLinks = [
   { label: "How it Works", href: "#how-it-works" },
@@ -14,18 +13,9 @@ const navLinks = [
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { scrollY } = useScroll();
-  
-  // Vercel-style dynamic backdrop blurs / border opacities
-  const headerBg = useTransform(scrollY, [0, 50], ["rgba(10,15,10, 0)", "rgba(10,15,10, 0.75)"]);
-  const headerBlur = useTransform(scrollY, [0, 50], ["blur(0px)", "blur(12px)"]);
-  const headerBorder = useTransform(scrollY, [0, 50], ["rgba(255,255,255,0)", "rgba(255,255,255,0.05)"]);
 
   return (
-    <motion.header 
-        style={{ backgroundColor: headerBg, backdropFilter: headerBlur, borderColor: headerBorder }}
-        className="fixed top-0 left-0 right-0 z-50 border-b"
-    >
+    <header className="fixed top-0 left-0 right-0 z-50 bg-primary/95 backdrop-blur-md border-b border-primary-foreground/10">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
@@ -97,6 +87,6 @@ export function Header() {
           </div>
         </nav>
       </div>
-    </motion.header>
+    </header>
   );
 }
