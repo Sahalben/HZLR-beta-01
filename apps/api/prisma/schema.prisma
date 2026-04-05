@@ -163,13 +163,34 @@ model EmployerProfile {
   id                String             @id @default(cuid())
   userId            String             @unique
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  firstName         String
-  lastName          String
-  photoUrl          String?
-  city              String?
-  state             String?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  firstName           String
+  lastName            String
+  photoUrl            String?
+  city                String?
+  state               String?
+  employerType        String    @default("individual")
+  companyName         String?
+  businessType        String?
+  gstin               String?
+  gstVerified         Boolean   @default(false)
+  gstVerifiedAt       DateTime?
+  gstLegalName        String?
+  gstStatus           String?
+  gstTurnoverSlab     String?
+  registeredAddress   String?
+  operatingCities     String[]
+  logoUrl             String?
+  website             String?
+  contactPerson       String?
+  designation         String?
+  workerCategories    String[]
+  monthlyHiringVolume String?
+  preferredHiringMode String?
+  hiringFrequency     String?
+  onboardingStep      Int       @default(1)
+  onboardingComplete  Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   jobs              Job[]
   ratings           Rating[]           @relation("EmployerRatings")
