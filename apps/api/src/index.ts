@@ -3,6 +3,8 @@ import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
@@ -11,7 +13,11 @@ if (process.env.NODE_ENV !== 'production') {
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-app.use(cors());
+app.use(helmet());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || '*',
+  credentials: true
+}));
 app.use(express.json());
 
 const httpServer = createServer(app);
@@ -40,6 +46,23 @@ import messagesRoutes from './routes/messages';
 import attendanceRoutes from './routes/attendance';
 import notificationsRoutes from './routes/notifications';
 import employersRoutes from './routes/employers';
+
+const otpSendLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many OTP requests. Try again in 1 hour.' }
+});
+
+const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  message: { error: 'Too many attempts. Request a new OTP.' }
+});
+
+app.use('/api/v1/auth/send-otp', otpSendLimiter);
+app.use('/api/v1/auth/send-email-otp', otpSendLimiter);
+app.use('/api/v1/auth/verify-otp', otpVerifyLimiter);
+app.use('/api/v1/auth/verify-email-otp', otpVerifyLimiter);
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/jobs', jobRoutes);

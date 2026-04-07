@@ -65,12 +65,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch(`${API_URL}/api/v1/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      if (res.status === 401 || res.status === 403) {
+        // Try getting new token if blocked
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (refreshToken) {
+           const refreshRes = await fetch(`${API_URL}/api/v1/auth/refresh`, {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ refreshToken })
+           });
+           if (refreshRes.ok) {
+             const rtData = await refreshRes.json();
+             localStorage.setItem('token', rtData.accessToken);
+             localStorage.setItem('refreshToken', rtData.refreshToken);
+             return await fetchProfile(); // Retry
+           }
+        }
+        throw new Error("Session expired and refresh failed");
+      }
+
       if (res.ok) {
         const data = await res.json();
         return data.user as Profile;
       }
     } catch (err) {
       console.error(err);
+      // Clean up corrupt tokens to not lock user
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
     }
     return null;
   }, []);
@@ -94,6 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await res.json();
     if (data.token) {
       localStorage.setItem('token', data.token);
+      if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
       await refreshProfile();
     } else {
       throw new Error(data.error || 'Login failed');
@@ -110,6 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await res.json();
     if (data.token) {
       localStorage.setItem('token', data.token);
+      if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
       await refreshProfile();
       return data.user;
     } else {
@@ -155,12 +180,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     setUser(null);
     setSession(null);
     setProfile(null);
   }, []);
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.exp * 1000 < Date.now()) {
+           // Token expired synchronously -> fast fail and force refresh loop on fetchProfile
+           console.log("Access token proactively expired on load.");
+        }
+      } catch (e) {
+        console.error("Token parse error", e);
+      }
+    }
     refreshProfile().finally(() => setLoading(false));
   }, [refreshProfile]);
 

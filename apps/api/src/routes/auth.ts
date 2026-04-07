@@ -8,6 +8,8 @@ const JWT_SECRET = process.env.JWT_ACCESS_SECRET || 'fallback_secret_for_dev_min
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
+import { sendOtpEmail } from '../services/email';
+import crypto from 'crypto';
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -49,7 +51,7 @@ export const authenticateToken = (req: any, res: Response, next: NextFunction) =
     });
 };
 
-// Send OTP via Twilio
+// Send OTP via Phone
 router.post('/send-otp', async (req, res) => {
     const { phone } = req.body;
 
@@ -57,74 +59,184 @@ router.post('/send-otp', async (req, res) => {
         return res.status(400).json({ error: 'Phone number required' });
     }
 
-    if (twilioClient && TWILIO_VERIFY_SERVICE_SID) {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hash = await bcrypt.hash(otp, 10);
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    await prisma.otpCode.create({
+        data: {
+            phone,
+            code: hash,
+            expiresAt
+        }
+    });
+
+    if (twilioClient && TWILIO_ACCOUNT_SID) {
         try {
-            await twilioClient.verify.v2.services(TWILIO_VERIFY_SERVICE_SID)
-                .verifications.create({ to: phone, channel: 'sms' });
+            await twilioClient.messages.create({
+                body: `Your HZLR verification code is: ${otp}`,
+                from: process.env.TWILIO_PHONE_NUMBER || '+1234567890',
+                to: phone
+            });
             return res.json({ success: true, message: 'OTP sent to ' + phone });
         } catch (error: any) {
             console.error('Twilio Send Error:', error);
-            return res.status(500).json({ error: error.message || 'Failed to send OTP via Twilio' });
+            // Fall through to mock logic on failure 
         }
     }
 
-    // Graceful fallback to Mock OTP if Twilio keys are missing during dev
-    res.json({ success: true, message: 'MOCK OTP sent to ' + phone, mockOtp: '123456' });
+    // Graceful fallback to Mock OTP
+    console.log("Mock OTP for phone:", otp);
+    res.json({ success: true, message: 'MOCK OTP sent to ' + phone, mockOtp: otp });
 });
 
-// Verify OTP and generate JWT
-router.post('/verify-otp', async (req, res) => {
-    const { phone, otp } = req.body;
+// Send OTP via Email
+router.post('/send-email-otp', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email required' });
 
-    if (twilioClient && TWILIO_VERIFY_SERVICE_SID) {
-        try {
-            const verificationCheck = await twilioClient.verify.v2.services(TWILIO_VERIFY_SERVICE_SID)
-                .verificationChecks.create({ to: phone, code: otp });
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hash = await bcrypt.hash(otp, 10);
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-            if (verificationCheck.status !== 'approved') {
-                return res.status(401).json({ error: 'Invalid or expired OTP' });
-            }
-        } catch (error: any) {
-            console.error('Twilio Verify Error:', error);
-            return res.status(401).json({ error: error.message || 'Verification failed' });
+    await prisma.otpCode.create({
+        data: {
+            email,
+            code: hash,
+            expiresAt
         }
-    } else {
-        // Graceful fallback purely for local dev without a Twilio Account
-        if (otp !== '123456') {
-            return res.status(401).json({ error: 'Invalid OTP' });
-        }
-    }
+    });
 
     try {
-        // UPSERT user
-        let user = await prisma.user.findUnique({ where: { phone } });
+        await sendOtpEmail(email, otp);
+    } catch(e) {
+        console.error("Email send failed", e);
+        console.log("Mock OTP for email:", otp); // Fallback debug
+    }
 
+    res.json({ success: true });
+});
+
+// Verify OTP (Phone)
+router.post('/verify-otp', async (req, res) => {
+    const { phone, otp } = req.body;
+    
+    if (!phone || !otp) return res.status(400).json({ error: 'Phone and OTP required' });
+
+    const record = await prisma.otpCode.findFirst({
+        where: { phone, isUsed: false, expiresAt: { gt: new Date() } },
+        orderBy: { createdAt: 'desc' }
+    });
+
+    if (!record) return res.status(400).json({ error: 'Invalid or expired OTP' });
+
+    const valid = await bcrypt.compare(otp, record.code);
+    if (!valid) return res.status(400).json({ error: 'Invalid OTP' });
+
+    await prisma.otpCode.update({ where: { id: record.id }, data: { isUsed: true } });
+
+    try {
+        let user = await prisma.user.findUnique({ where: { phone } });
         if (!user) {
             user = await prisma.user.create({
-                data: {
-                    phone,
-                    role: 'WORKER', // Default, will ask role later if new
-                    isPhoneVerified: true
-                }
+                data: { phone, role: 'WORKER', isPhoneVerified: true }
             });
         }
 
         const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+        
+        // Handle refresh logic
+        const refreshToken = crypto.randomBytes(40).toString('hex');
+        await prisma.refreshToken.create({
+            data: {
+                userId: user.id,
+                token: refreshToken,
+                expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            }
+        });
 
-        res.json({ success: true, token, user });
+        res.json({ success: true, token, refreshToken, user });
     } catch (e: any) {
-        console.error("OTP Verification Error:", e);
-        if (!process.env.DATABASE_URL || e.message.includes("PrismaClient")) {
-             console.log("Mocking OTP Verification success due to missing DB.");
-             const token = jwt.sign({ id: 'mock_user_123', role: 'WORKER' }, JWT_SECRET, { expiresIn: '7d' });
-             return res.json({ 
-                 success: true, 
-                 token, 
-                 user: { id: 'mock_user_1', phone, role: 'WORKER', isPhoneVerified: true, onboardingState: 'ANONYMOUS' } 
-             });
-        }
-        res.status(500).json({ error: e.message || "Internal server error during DB operation" });
+        console.error("Verification Error:", e);
+        res.status(500).json({ error: e.message || "Internal server error" });
     }
+});
+
+// Verify OTP (Email)
+router.post('/verify-email-otp', async (req, res) => {
+    const { email, otp } = req.body;
+    
+    if (!email || !otp) return res.status(400).json({ error: 'Email and OTP required' });
+
+    const record = await prisma.otpCode.findFirst({
+        where: { email, isUsed: false, expiresAt: { gt: new Date() } },
+        orderBy: { createdAt: 'desc' }
+    });
+
+    if (!record) return res.status(400).json({ error: 'Invalid or expired OTP' });
+
+    const valid = await bcrypt.compare(otp, record.code);
+    if (!valid) return res.status(400).json({ error: 'Invalid OTP' });
+
+    await prisma.otpCode.update({ where: { id: record.id }, data: { isUsed: true } });
+
+    try {
+        let user = await prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            user = await prisma.user.create({
+                data: { email, role: 'WORKER', isEmailVerified: true }
+            });
+        } else {
+            await prisma.user.update({ where: { id: user.id }, data: { isEmailVerified: true } });
+        }
+
+        const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '15m' }); // Short lived
+        const refreshToken = crypto.randomBytes(40).toString('hex');
+        await prisma.refreshToken.create({
+            data: {
+                userId: user.id,
+                token: refreshToken,
+                expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            }
+        });
+
+        res.json({ success: true, token, refreshToken, user });
+    } catch (e: any) {
+        console.error("Verification Error:", e);
+        res.status(500).json({ error: e.message || "Internal server error" });
+    }
+});
+
+// Refresh token rotation
+router.post('/refresh', async (req, res) => {
+    const { refreshToken } = req.body;
+    if (!refreshToken) return res.status(400).json({ error: 'Refresh token required' });
+
+    const record = await prisma.refreshToken.findUnique({
+        where: { token: refreshToken },
+        include: { user: true }
+    });
+
+    if (!record || record.expiresAt < new Date()) {
+        return res.status(401).json({ error: 'Invalid or expired refresh token' });
+    }
+
+    // Immediately map reuse and invalidate the old token
+    await prisma.refreshToken.delete({ where: { id: record.id } });
+
+    // Issue new tokens
+    const newAccessToken = jwt.sign({ id: record.user.id, role: record.user.role }, JWT_SECRET, { expiresIn: '15m' });
+    const newRefreshToken = crypto.randomBytes(40).toString('hex');
+
+    await prisma.refreshToken.create({
+        data: {
+            userId: record.user.id,
+            token: newRefreshToken,
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        }
+    });
+
+    res.json({ accessToken: newAccessToken, refreshToken: newRefreshToken });
 });
 
 router.get('/me', authenticateToken, async (req: any, res) => {
