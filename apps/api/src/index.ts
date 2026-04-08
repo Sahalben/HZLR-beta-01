@@ -15,7 +15,8 @@ const PORT = process.env.PORT || 8080;
 
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
+  // Setting origin logic explicitly to true allows wildcard reflection which satisfies credentials: true
+  origin: process.env.FRONTEND_URL ? process.env.FRONTEND_URL : function (origin, callback) { callback(null, true); },
   credentials: true
 }));
 app.use(express.json());

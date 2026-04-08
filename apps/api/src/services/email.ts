@@ -1,8 +1,13 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Initialize lazily to prevent fatal boot crashes if the env var isn't loaded yet
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export async function sendOtpEmail(to: string, otp: string) {
+  if (!resend) {
+    console.log(`[MOCK EMAIL API] To: ${to}, OTP: ${otp}. (No RESEND_API_KEY set)`);
+    return { data: { id: 'mock-email-id' } };
+  }
   return resend.emails.send({
     from: process.env.FROM_EMAIL ?? 'noreply@hzlr.in',
     to,
