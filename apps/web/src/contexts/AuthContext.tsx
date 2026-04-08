@@ -43,6 +43,8 @@ interface AuthContextType {
   loginWithOtp: (phone: string, otp: string) => Promise<any>;
   loginWithEmail: (email: string, password: string) => Promise<any>;
   signupWithEmail: (email: string, password: string, role: UserRole) => Promise<any>;
+  sendEmailOtp: (email: string) => Promise<any>;
+  verifyEmailOtp: (email: string, otp: string) => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -152,9 +154,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await res.json();
     if (data.token) {
       localStorage.setItem('token', data.token);
+      if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
       await refreshProfile();
+      return email;
     } else {
       throw new Error(data.error || 'Signup failed');
+    }
+  };
+
+  const sendEmailOtp = async (email: string) => {
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+    const res = await fetch(`${API_URL}/api/v1/auth/send-email-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Failed to send code');
+    return data;
+  };
+
+  const verifyEmailOtp = async (email: string, otp: string) => {
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+    const res = await fetch(`${API_URL}/api/v1/auth/verify-email-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp })
+    });
+    const data = await res.json();
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+      if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+      await refreshProfile();
+      return data;
+    } else {
+      throw new Error(data.error || 'Verification failed');
     }
   };
 
@@ -215,7 +249,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         updateProfile,
         loginWithOtp,
         loginWithEmail,
-        signupWithEmail
+        signupWithEmail,
+        sendEmailOtp,
+        verifyEmailOtp
       }}
     >
       {children}

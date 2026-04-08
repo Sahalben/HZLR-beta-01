@@ -11,6 +11,7 @@ import Signup from "./pages/Signup";
 // Onboarding Pages
 import RoleSelection from "./pages/signup/RoleSelection";
 import OTPVerification from "./pages/signup/OTPVerification";
+import EmailOTPVerification from "./pages/signup/EmailOTPVerification";
 import ProfileSetup from "./pages/signup/ProfileSetup";
 import KYCVerification from "./pages/signup/KYCVerification";
 import OnboardingComplete from "./pages/signup/Complete";
@@ -61,6 +62,7 @@ const App = () => (
             
             {/* Onboarding Routes */}
             <Route path="/signup/otp" element={<OTPVerification />} />
+            <Route path="/signup/verify-email" element={<EmailOTPVerification />} />
             <Route path="/signup/role" element={<RoleSelection />} />
             <Route path="/signup/profile" element={<ProfileSetup />} />
             <Route path="/signup/kyc" element={<KYCVerification />} />

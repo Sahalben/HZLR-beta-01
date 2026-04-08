@@ -44,14 +44,10 @@ export default function Signup() {
       await signupWithEmail(email, password, role);
       toast({
         title: "Account Created",
-        description: "Welcome to HZLR!",
+        description: "Please verify your email address to continue.",
       });
-      // Redirect to the precise multi-step profile builder
-      if (role === 'employer') {
-        navigate("/employer/onboarding");
-      } else {
-        navigate("/signup/profile");
-      }
+      // Redirect to the new Email OTP verifier, passing email in state
+      navigate("/signup/verify-email", { state: { email } });
     } catch (error: any) {
       toast({
         title: "Error",
