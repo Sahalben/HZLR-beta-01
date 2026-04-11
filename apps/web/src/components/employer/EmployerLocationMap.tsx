@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -36,6 +36,20 @@ const RecenterMap = ({ lat, lng }: { lat: number, lng: number }) => {
 export function EmployerLocationMap({ activeWorkers }: EmployerLocationMapProps) {
   const [position, setPosition] = useState<[number, number] | null>(null);
   const [errorText, setErrorText] = useState("");
+  const markerRef = useRef<L.Marker>(null);
+
+  const eventHandlers = useMemo(
+    () => ({
+      dragend() {
+        const marker = markerRef.current;
+        if (marker != null) {
+          setPosition([marker.getLatLng().lat, marker.getLatLng().lng]);
+          setErrorText("Location manually overridden.");
+        }
+      },
+    }),
+    []
+  );
 
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -65,8 +79,9 @@ export function EmployerLocationMap({ activeWorkers }: EmployerLocationMapProps)
   return (
     <div className="relative h-64 md:h-[400px] rounded-2xl overflow-hidden shadow-2xl border border-white/5">
       {errorText && (
-          <div className="absolute top-2 left-2 right-2 z-[1000] bg-black/80 backdrop-blur-md text-white text-[10px] font-bold p-2 rounded-lg border border-white/10 text-center">
-              {errorText}
+          <div className="absolute top-2 left-2 right-2 z-[1000] bg-black/80 backdrop-blur-md text-white text-[10px] font-bold p-2 rounded-lg border border-white/10 text-center flex flex-col items-center">
+              <span>{errorText}</span>
+              <span className="text-emerald-400 mt-0.5">Tip: You can drag your blue dot to your exact building!</span>
           </div>
       )}
       <MapContainer 
@@ -82,9 +97,15 @@ export function EmployerLocationMap({ activeWorkers }: EmployerLocationMapProps)
         <RecenterMap lat={position[0]} lng={position[1]} />
         
         {/* Employer Location & Recruitment Radar */}
-        <Marker position={position} icon={employerLocationIcon}>
+        <Marker 
+           position={position} 
+           icon={employerLocationIcon}
+           draggable={true}
+           eventHandlers={eventHandlers}
+           ref={markerRef}
+        >
             <Popup className="custom-popup">
-               <div className="font-bold text-xs uppercase text-center p-1">Your HQ</div>
+               <div className="font-bold text-xs uppercase text-center p-1">Your HQ<br/><span className="text-[9px] text-muted-foreground font-normal">(Drag to adjust)</span></div>
             </Popup>
         </Marker>
         <Circle center={position} radius={10000} pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.05, weight: 1, dashArray: '4' }} />
