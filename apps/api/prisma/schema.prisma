@@ -371,9 +371,11 @@ model Attendance {
   checkInLat        Float?
   checkInLng        Float?
   checkInDistance   Float?
+  checkInMethod     String?
   checkOutTime      DateTime?
   checkOutLat       Float?
   checkOutLng       Float?
+  checkOutMethod    String?
   confirmedAt       DateTime?
   confirmedBy       String?
   notes             String?
