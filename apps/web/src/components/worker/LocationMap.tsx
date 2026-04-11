@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -37,42 +37,22 @@ const RecenterMap = ({ lat, lng }: { lat: number, lng: number }) => {
 export function LocationMap({ jobs, onApply }: LocationMapProps) {
   const [position, setPosition] = useState<[number, number] | null>(null);
   const [errorText, setErrorText] = useState("");
-  const markerRef = useRef<L.Marker>(null);
-
-  const eventHandlers = useMemo(
-    () => ({
-      dragend() {
-        const marker = markerRef.current;
-        if (marker != null) {
-          setPosition([marker.getLatLng().lat, marker.getLatLng().lng]);
-          setErrorText("Location manually overridden.");
-        }
-      },
-    }),
-    []
-  );
 
   useEffect(() => {
-    let mounted = true;
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-           if (mounted) setPosition([pos.coords.latitude, pos.coords.longitude]);
-        },
+        (pos) => setPosition([pos.coords.latitude, pos.coords.longitude]),
         (err) => {
             console.warn("Geolocation blocked:", err);
-            // Fallback if denied
-            if (mounted) {
-                setPosition([9.9312, 76.2673]); // Kochi Fallback
-                setErrorText("Using default Kochi coordinates. Enable GPS for live radar.");
-            }
+            // Fallback to Bangalore Center if denied
+            setPosition([12.9716, 77.5946]);
+            setErrorText("Using default city coordinates. Enable GPS for live radar.");
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
     } else {
-        if (mounted) setPosition([9.9312, 76.2673]); 
+        setPosition([12.9716, 77.5946]); 
     }
-    return () => { mounted = false; };
   }, []);
 
   if (!position) {
@@ -87,9 +67,8 @@ export function LocationMap({ jobs, onApply }: LocationMapProps) {
   return (
     <div className="relative h-56 rounded-2xl overflow-hidden shadow-2xl border border-white/5">
       {errorText && (
-          <div className="absolute top-2 left-2 right-2 z-[1000] bg-black/80 backdrop-blur-md text-white text-[10px] font-bold p-2 rounded-lg border border-white/10 text-center flex flex-col items-center">
-              <span>{errorText}</span>
-              <span className="text-emerald-400 mt-0.5">Tip: You can drag your green dot to fix inaccuracy!</span>
+          <div className="absolute top-2 left-2 right-2 z-[1000] bg-black/80 backdrop-blur-md text-white text-[10px] font-bold p-2 rounded-lg border border-white/10 text-center">
+              {errorText}
           </div>
       )}
       <MapContainer 
@@ -106,15 +85,9 @@ export function LocationMap({ jobs, onApply }: LocationMapProps) {
         <RecenterMap lat={position[0]} lng={position[1]} />
         
         {/* Worker Location Marker & Radar Radius */}
-        <Marker 
-           position={position} 
-           icon={workerLocationIcon}
-           draggable={true}
-           eventHandlers={eventHandlers}
-           ref={markerRef}
-        >
+        <Marker position={position} icon={workerLocationIcon}>
             <Popup className="custom-popup">
-               <div className="font-bold text-xs uppercase text-center p-1">Your Location<br/><span className="text-[9px] text-muted-foreground font-normal">(Drag to adjust if inaccurate)</span></div>
+               <div className="font-bold text-xs uppercase text-center p-1">Your Location</div>
             </Popup>
         </Marker>
         <Circle center={position} radius={3000} pathOptions={{ color: '#10b981', fillColor: '#10b981', fillOpacity: 0.1, weight: 1, dashArray: '4' }} />
