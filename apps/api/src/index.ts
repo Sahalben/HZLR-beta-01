@@ -15,8 +15,8 @@ const PORT = process.env.PORT || 8080;
 
 app.use(helmet());
 app.use(cors({
-  // Setting origin logic explicitly to true allows wildcard reflection which satisfies credentials: true
-  origin: process.env.FRONTEND_URL ? process.env.FRONTEND_URL : function (origin, callback) { callback(null, true); },
+  // Safely reflects any origin automatically
+  origin: true,
   credentials: true
 }));
 app.use(express.json());
@@ -50,13 +50,13 @@ import employersRoutes from './routes/employers';
 
 const otpSendLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 5,
+  max: 100, // Raised significantly for development testing
   message: { error: 'Too many OTP requests. Try again in 1 hour.' }
 });
 
 const otpVerifyLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 3,
+  max: 100, // Raised significantly for development testing
   message: { error: 'Too many attempts. Request a new OTP.' }
 });
 

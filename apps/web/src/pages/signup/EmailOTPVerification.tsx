@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, ArrowRight, RefreshCw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,14 +20,18 @@ export default function EmailOTPVerification() {
   
   // Extract email from location state or user profile
   const email = location.state?.email || user?.email;
+  const hasSentOtp = useRef(false);
 
   useEffect(() => {
     if (!email) {
       navigate('/signup');
       return;
     }
-    // Automatically send OTP on mount
-    handleSendOTP();
+    // Only send on first genuine mount to prevent strict-mode duplicate invalidations
+    if (!hasSentOtp.current) {
+        hasSentOtp.current = true;
+        handleSendOTP();
+    }
   }, [email]);
 
   useEffect(() => {

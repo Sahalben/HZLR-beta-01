@@ -13,7 +13,7 @@ import crypto from 'crypto';
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 20,
+    max: 200, // Raised for testing
     message: { error: 'Too many auth requests from this IP, please try again after 15 minutes' }
 });
 
