@@ -241,7 +241,21 @@ export default function WorkerHome() {
         {/* Dynamic Find Jobs from Map */}
         <div>
            <h3 className="font-bold text-lg text-foreground mb-3 tracking-tight">Active Radar</h3>
-           <LocationMap jobs={availableJobs} onApply={handleApply} />
+           <LocationMap 
+             jobs={availableJobs} 
+             onApply={handleApply} 
+             onLocationChange={async (lat, lng) => {
+               try {
+                 const API_URL = import.meta.env.VITE_API_URL || '';
+                 await fetch(`${API_URL}/api/v1/auth/profile`, {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+                   body: JSON.stringify({ location_lat: lat, location_lng: lng })
+                 });
+                 toast({ title: "Radar Offset Sent", description: "Your location was successfully corrected." });
+               } catch(e) {}
+             }}
+           />
         </div>
 
         {/* Available Gigs Feed */}

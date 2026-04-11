@@ -98,7 +98,20 @@ export default function EmployerHome() {
           <div className="flex items-center justify-between mb-4 mt-2">
             <h2 className="text-xl font-black text-foreground tracking-tight" style={{ fontFamily: 'Syne, sans-serif' }}>Live Network</h2>
           </div>
-          <EmployerLocationMap activeWorkers={data.activeWorkers} />
+          <EmployerLocationMap 
+             activeWorkers={data.activeWorkers} 
+             onLocationChange={async (lat, lng) => {
+               try {
+                 const API_URL = import.meta.env.VITE_API_URL || '';
+                 await fetch(`${API_URL}/api/v1/auth/profile`, {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+                   body: JSON.stringify({ location_lat: lat, location_lng: lng })
+                 });
+                 toast({ title: "HQ Coordinates Updated", description: "Map offset saved successfully." });
+               } catch(e) {}
+             }}
+          />
         </div>
 
         <div>
