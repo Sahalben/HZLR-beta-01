@@ -48,7 +48,7 @@ export function LocationMap({ jobs, onApply }: LocationMapProps) {
             setPosition([12.9716, 77.5946]);
             setErrorText("Using default city coordinates. Enable GPS for live radar.");
         },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
       );
     } else {
         setPosition([12.9716, 77.5946]); 

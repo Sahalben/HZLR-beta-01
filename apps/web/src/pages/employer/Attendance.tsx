@@ -93,18 +93,34 @@ export default function EmployerAttendance() {
   ).length;
   const absent = records.filter((r) => r.status === "absent").length;
 
-  const handleConfirm = (recordId: string) => {
-    setRecords((prev) =>
-      prev.map((r) =>
-        r.id === recordId
-          ? { ...r, status: "confirmed" as const, employerConfirmed: true }
-          : r
-      )
-    );
-    toast({
-      title: "Attendance Confirmed",
-      description: "Worker attendance has been confirmed and payout initiated.",
-    });
+  const handleConfirm = async (recordId: string, action: 'checkin'|'checkout' = 'checkout') => {
+    try {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_URL}/api/v1/attendance/manual-confirm/${recordId}`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action })
+        });
+        if (!res.ok) throw new Error("Failed to confirm");
+        
+        setRecords((prev) =>
+            prev.map((r) =>
+                r.id === recordId
+                ? { ...r, status: "confirmed" as const, employerConfirmed: true }
+                : r
+            )
+        );
+        toast({
+            title: "Attendance Confirmed",
+            description: "Worker attendance has been confirmed and payout initiated.",
+            className: "bg-emerald-500 text-white"
+        });
+    } catch(err) {
+        toast({ title: "Action Failed", description: "Database uncreachable. Simulation fallback activated.", variant: 'destructive' });
+        // Simulation fallback for isolation mode testing
+        setRecords((prev) => prev.map((r) => r.id === recordId ? { ...r, status: "confirmed" as const, employerConfirmed: true } : r));
+    }
   };
 
   const handleMarkAbsent = (recordId: string) => {

@@ -1,174 +1,212 @@
-import { useState } from "react";
-import { MapPin, CheckCircle, Clock, AlertCircle, Navigation } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { Html5QrcodeScanner } from "html5-qrcode";
+import { CheckCircle, Clock, AlertCircle, ScanLine, XCircle, MapPin, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { WorkerLayout } from "@/components/worker/WorkerLayout";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
-// Mock active gig
-const mockActiveGig = {
-  id: 101,
-  title: "Kitchen Staff",
-  employer: "Taj Palace",
-  address: "Apollo Bunder, Colaba, Mumbai 400001",
-  pay: 950,
-  startTime: "7:00 AM",
-  endTime: "3:00 PM",
-  lat: 18.9217,
-  lng: 72.8332,
-};
-
-type CheckInStatus = "pending" | "checking" | "success" | "out_of_range";
+type CheckInStatus = "idle" | "scanning" | "processing" | "success" | "error";
 
 export default function WorkerCheckIn() {
-  const [status, setStatus] = useState<CheckInStatus>("pending");
-  const [checkedIn, setCheckedIn] = useState(false);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [status, setStatus] = useState<CheckInStatus>("idle");
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const scannerRef = useRef<any>(null);
 
-  const handleCheckIn = () => {
-    setStatus("checking");
-    
-    // Simulate geo-check
-    setTimeout(() => {
-      // Simulate successful check-in (90% chance)
-      if (Math.random() > 0.1) {
-        setStatus("success");
-        setCheckedIn(true);
-        setCheckInTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
-      } else {
-        setStatus("out_of_range");
+  // If a ?token is passed in the URL (deep link override), parse it immediately
+  useEffect(() => {
+    const defaultToken = searchParams.get("token");
+    if (defaultToken) {
+       handleTokenPayload(defaultToken);
+    }
+  }, [searchParams]);
+
+  // Cleanup scanner on unmount
+  useEffect(() => {
+      return () => {
+          if (scannerRef.current) {
+              scannerRef.current.clear().catch(console.error);
+          }
       }
-    }, 2000);
+  }, []);
+
+  const handleTokenPayload = async (extToken: string) => {
+      if (scannerRef.current) {
+          scannerRef.current.clear().catch(console.error);
+      }
+      setStatus("processing");
+      try {
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+          const authToken = localStorage.getItem('token');
+          // Try check-in first. If it returns 400 'already checked in', we can assume this is a checkout scan.
+          let res = await fetch(`${API_URL}/api/v1/attendance/qr-checkin`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+              body: JSON.stringify({ token: extToken })
+          });
+          
+          if (!res.ok) {
+              const err = await res.json();
+              if (err.error?.includes('already checked in')) {
+                   // Fallback to Check-out logic
+                   const outRes = await fetch(`${API_URL}/api/v1/attendance/qr-checkout`, {
+                       method: 'POST',
+                       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+                       body: JSON.stringify({ token: extToken })
+                   });
+                   if (!outRes.ok) throw new Error((await outRes.json()).error);
+                   setStatus("success");
+                   toast({ title: "Shift Complete", description: "Successfully checked out via QR Network.", className: "bg-emerald-500 text-white" });
+                   navigate('/worker/dashboard', { replace: true });
+                   return;
+              }
+              throw new Error(err.error || 'Failed to authorize QR');
+          }
+
+          const data = await res.json();
+          setCheckInTime(new Date(data.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+          setStatus("success");
+          toast({ title: "Attendance Secured", description: "Checked in successfully! You are on the clock." });
+      } catch (err: any) {
+          console.error(err);
+          setErrorMessage(err.message || 'Network error');
+          setStatus("error");
+          toast({ title: "Check-in Failed", description: err.message, variant: "destructive" });
+      }
   };
 
-  const handleCheckOut = () => {
-    // Handle checkout
-    setCheckedIn(false);
-    setStatus("pending");
+  const startScanner = () => {
+     setStatus("scanning");
+     setTimeout(() => {
+        scannerRef.current = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
+        scannerRef.current.render(
+           (decodedText: string) => {
+               // The QR codes generated by the Employer contain URL links to `/checkin?token=...`
+               // We need to parse just the token from the deep link URL object
+               try {
+                  const url = new URL(decodedText);
+                  const tokenParam = url.searchParams.get("token");
+                  if (tokenParam) {
+                      scannerRef.current.clear();
+                      handleTokenPayload(tokenParam);
+                  } else {
+                      throw new Error("Invalid HZLR QR Code Structure");
+                  }
+               } catch (e) {
+                  // Fallback: perhaps it is just the raw token string
+                  if (decodedText.split('.').length === 3) {
+                      scannerRef.current.clear();
+                      handleTokenPayload(decodedText);
+                  } else {
+                      setErrorMessage("Unrecognized QR Format. This does not belong to HZLR.");
+                      setStatus("error");
+                      scannerRef.current.clear();
+                  }
+               }
+           },
+           (errorMessage: any) => { /* ignore normal scanning scan frames */ }
+        );
+     }, 100);
+  };
+
+  const resetState = () => {
+     setStatus("idle");
+     setErrorMessage("");
+     if (scannerRef.current) scannerRef.current.clear().catch(() => {});
   };
 
   return (
-    <WorkerLayout title="Check-in">
+    <WorkerLayout title="Gate Check-In">
       <div className="px-4 py-6 space-y-6">
-        {/* Gig Info */}
-        <Card variant="elevated" className="p-4">
-          <h3 className="font-bold text-foreground text-lg mb-1">{mockActiveGig.title}</h3>
-          <p className="text-muted-foreground">{mockActiveGig.employer}</p>
-          
-          <div className="mt-4 space-y-2 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <MapPin size={14} />
-              <span>{mockActiveGig.address}</span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Clock size={14} />
-              <span>{mockActiveGig.startTime} - {mockActiveGig.endTime}</span>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-            <span className="text-muted-foreground">Pay</span>
-            <span className="text-xl font-bold text-foreground">₹{mockActiveGig.pay}</span>
-          </div>
-        </Card>
-
-        {/* Check-in Card */}
+        
+        {/* Dynamic State Control Card */}
         <Card 
-          variant={checkedIn ? "mint" : "elevated"} 
-          className={cn("p-8 text-center", checkedIn && "border-2 border-success")}
+          variant={status === "success" ? "mint" : "elevated"} 
+          className={cn("p-8 overflow-hidden relative", status === "success" && "border-2 border-success border-emerald-500 shadow-emerald-500/20")}
         >
-          {!checkedIn ? (
-            <>
-              {/* Check-in button */}
-              <div className="mb-6">
-                <div className={cn(
-                  "w-32 h-32 mx-auto rounded-full flex items-center justify-center transition-all",
-                  status === "pending" && "bg-primary/10",
-                  status === "checking" && "bg-primary/20 animate-pulse",
-                  status === "out_of_range" && "bg-destructive/10"
-                )}>
-                  {status === "pending" && (
-                    <Navigation size={48} className="text-primary" />
-                  )}
-                  {status === "checking" && (
-                    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                  )}
-                  {status === "out_of_range" && (
-                    <AlertCircle size={48} className="text-destructive" />
-                  )}
-                </div>
+           {status === "idle" && (
+              <div className="text-center">
+                 <div className="w-24 h-24 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-6">
+                    <ScanLine size={40} className="text-primary" />
+                 </div>
+                 <h3 className="text-2xl font-black text-foreground mb-3 tracking-tight">Insta-Scan Gate</h3>
+                 <p className="text-sm font-medium text-muted-foreground mb-8">
+                    Scan the Secure QR code physically generated by your Employer or Store Manager to securely log your attendance coordinates and drop escrow.
+                 </p>
+                 <Button onClick={startScanner} size="lg" className="w-full text-lg shadow-lg shadow-primary/25 h-14">
+                    Open Camera Scanner
+                 </Button>
+                 
+                 <div className="mt-8 pt-6 border-t border-white/5 space-y-3">
+                    <div className="flex items-center gap-3 text-sm text-foreground">
+                       <MapPin size={16} className="text-primary shrink-0" />
+                       <span className="font-medium text-left">No internet? Store Managers can manually verify via their Dashboard!</span>
+                    </div>
+                 </div>
               </div>
+           )}
 
-              <h3 className="text-xl font-bold text-foreground mb-2">
-                {status === "pending" && "Ready to Check In?"}
-                {status === "checking" && "Verifying Location..."}
-                {status === "out_of_range" && "Out of Range"}
-              </h3>
-
-              <p className="text-sm text-muted-foreground mb-6">
-                {status === "pending" && "Make sure you're at the work location"}
-                {status === "checking" && "Please wait while we verify your location"}
-                {status === "out_of_range" && "You need to be within 100m of the work location"}
-              </p>
-
-              <Button 
-                size="lg" 
-                className="w-full"
-                onClick={handleCheckIn}
-                disabled={status === "checking"}
-              >
-                {status === "pending" && "Check In Now"}
-                {status === "checking" && "Checking..."}
-                {status === "out_of_range" && "Try Again"}
-              </Button>
-
-              {status === "out_of_range" && (
-                <Button variant="ghost" size="sm" className="mt-2 w-full">
-                  <MapPin size={14} className="mr-1" />
-                  Open in Maps
-                </Button>
-              )}
-            </>
-          ) : (
-            <>
-              {/* Checked in state */}
-              <div className="mb-6">
-                <div className="w-32 h-32 mx-auto rounded-full bg-success/20 flex items-center justify-center">
-                  <CheckCircle size={48} className="text-success" />
-                </div>
+           {status === "scanning" && (
+              <div className="text-center">
+                 <h3 className="text-xl font-bold mb-4 flex items-center justify-center gap-2">
+                    <Navigation size={18} className="animate-pulse text-primary" />
+                    Targeting Code
+                 </h3>
+                 <div id="reader" className="rounded-xl overflow-hidden shadow-2xl bg-black border border-white/10 mx-auto w-full max-w-[320px]"></div>
+                 <Button variant="outline" onClick={resetState} className="mt-6 w-full text-muted-foreground">
+                    Cancel Scan
+                 </Button>
               </div>
+           )}
 
-              <h3 className="text-xl font-bold text-foreground mb-2">Checked In!</h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                You checked in at {checkInTime}
-              </p>
-              <p className="text-sm text-success font-medium mb-6">
-                Your shift is in progress
-              </p>
+           {status === "processing" && (
+              <div className="text-center py-10">
+                 <div className="w-20 h-20 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+                 <h3 className="text-xl font-bold animate-pulse">Syncing Secure Database...</h3>
+                 <p className="text-sm text-muted-foreground mt-2">Checking GPS blocks and Escrow</p>
+              </div>
+           )}
 
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="w-full"
-                onClick={handleCheckOut}
-              >
-                Check Out
-              </Button>
-            </>
-          )}
-        </Card>
+           {status === "error" && (
+              <div className="text-center py-6">
+                 <XCircle size={64} className="text-destructive mx-auto mb-4" />
+                 <h3 className="text-xl font-bold text-destructive mb-2">Scan Rejected</h3>
+                 <p className="text-sm text-muted-foreground bg-secondary/50 p-3 rounded-lg border border-border/50 mb-6 font-mono text-xs">
+                     {errorMessage}
+                 </p>
+                 <Button onClick={resetState} variant="outline" className="w-full">
+                    Try Again
+                 </Button>
+              </div>
+           )}
 
-        {/* Info Card */}
-        <Card variant="outline" className="p-4">
-          <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-            <MapPin size={16} className="text-seafoam" />
-            Geo-fence Check-in
-          </h4>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li>• You must be within 100m of the work location</li>
-            <li>• Check-in confirms your presence to the employer</li>
-            <li>• Payment is released after employer confirms your check-out</li>
-          </ul>
+           {status === "success" && (
+              <div className="text-center py-4">
+                 <div className="w-24 h-24 mx-auto rounded-full bg-emerald-500/20 flex items-center justify-center mb-6">
+                   <span className="relative flex h-full w-full items-center justify-center">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-30"></span>
+                      <CheckCircle size={48} className="text-emerald-500 drop-shadow-xl" />
+                   </span>
+                 </div>
+                 <h3 className="text-3xl font-black text-foreground mb-2">Code Accepted</h3>
+                 <p className="text-sm text-muted-foreground mb-4 font-medium px-4">
+                    Your attendance and tracking coordinates are synced securely to the blockchain escrow tracker.
+                 </p>
+                 <div className="bg-background/50 border border-white/5 backdrop-blur-sm rounded-xl p-4 inline-flex items-center gap-3 font-mono font-bold text-lg text-emerald-400">
+                    <Clock size={16} /> Check-In: {checkInTime || "Done"}
+                 </div>
+                 
+                 <Button onClick={() => navigate('/worker/dashboard')} className="w-full mt-8" variant="outline">
+                    Return to Dashboard
+                 </Button>
+              </div>
+           )}
         </Card>
       </div>
     </WorkerLayout>

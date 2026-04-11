@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Clock, MapPin, Users, Loader2, ChevronRight, CheckCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { QrCode } from "lucide-react";
 
 export default function JobManage() {
   const { id } = useParams();
@@ -12,6 +14,28 @@ export default function JobManage() {
   const { toast } = useToast();
   const [job, setJob] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [qrBase64, setQrBase64] = useState<string | null>(null);
+  const [qrGenerating, setQrGenerating] = useState(false);
+
+  const handleGenerateQR = async () => {
+       setQrGenerating(true);
+       try {
+           const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+           const token = localStorage.getItem('token');
+           const res = await fetch(`${API_URL}/api/v1/attendance/qr/${id}`, {
+               headers: { Authorization: `Bearer ${token}` }
+           });
+           if (!res.ok) throw new Error("Failed to generate QR");
+           const data = await res.json();
+           setQrBase64(data.qrDataUrl);
+           setQrOpen(true);
+       } catch (err) {
+           toast({ title: "Error", description: "Could not generate QR Code", variant: "destructive" });
+       } finally {
+           setQrGenerating(false);
+       }
+  };
 
   useEffect(() => {
      const fetchJobDetail = async () => {
@@ -83,6 +107,30 @@ export default function JobManage() {
                 <h3 className="font-bold text-lg text-foreground tracking-tight flex items-center gap-2"><Users className="text-primary" size={20} /> Shift Roster</h3>
                 <span className="text-sm font-black text-muted-foreground">{job.filledSpots} / {job.totalSpots} Secured</span>
             </div>
+
+            <Dialog open={qrOpen} onOpenChange={setQrOpen}>
+                 <div className="mb-4">
+                    <Button onClick={handleGenerateQR} disabled={qrGenerating} variant="outline" className="w-full sm:w-auto font-bold border-primary/50 text-primary hover:bg-primary/10">
+                        {qrGenerating ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <QrCode className="w-4 h-4 mr-2" />}
+                        Generate Attendance QR
+                    </Button>
+                 </div>
+                 <DialogContent className="sm:max-w-md bg-zinc-950 border-white/10 text-center">
+                    <DialogHeader>
+                       <DialogTitle className="text-xl font-black text-center text-white">Insta-Scan Gate</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex flex-col items-center justify-center p-6 bg-white rounded-xl mx-auto shadow-2xl shadow-primary/20">
+                       {qrBase64 ? (
+                           <>
+                             <img src={qrBase64} alt="Job Check-In QR Code" className="w-64 h-64 border-4 border-black rounded" />
+                             <p className="mt-4 text-xs font-black text-zinc-900 uppercase tracking-widest text-center max-w-[200px]">Have workers scan this from their app</p>
+                           </>
+                       ) : (
+                           <Loader2 className="animate-spin h-8 w-8 text-black" />
+                       )}
+                    </div>
+                 </DialogContent>
+            </Dialog>
             
             <div className="space-y-3">
                {job.applications && job.applications.length > 0 ? job.applications.map((app: any) => (
