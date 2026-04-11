@@ -52,19 +52,25 @@ export function EmployerLocationMap({ activeWorkers }: EmployerLocationMapProps)
   );
 
   useEffect(() => {
+    let mounted = true;
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => setPosition([pos.coords.latitude, pos.coords.longitude]),
+        (pos) => {
+            if(mounted) setPosition([pos.coords.latitude, pos.coords.longitude]);
+        },
         (err) => {
             console.warn("Geolocation blocked:", err);
-            setPosition([12.9716, 77.5946]); // Bangalore fallback
-            setErrorText("Using default city coordinates for map initialization.");
+            if(mounted) {
+                setPosition([9.9312, 76.2673]); // Kochi fallback
+                setErrorText("Using default city coordinates for map initialization.");
+            }
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
-        setPosition([12.9716, 77.5946]); 
+        if(mounted) setPosition([9.9312, 76.2673]); 
     }
+    return () => { mounted = false; };
   }, []);
 
   if (!position) {

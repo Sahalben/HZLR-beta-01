@@ -53,20 +53,26 @@ export function LocationMap({ jobs, onApply }: LocationMapProps) {
   );
 
   useEffect(() => {
+    let mounted = true;
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => setPosition([pos.coords.latitude, pos.coords.longitude]),
+        (pos) => {
+           if (mounted) setPosition([pos.coords.latitude, pos.coords.longitude]);
+        },
         (err) => {
             console.warn("Geolocation blocked:", err);
-            // Fallback to Bangalore Center if denied
-            setPosition([12.9716, 77.5946]);
-            setErrorText("Using default city coordinates. Enable GPS for live radar.");
+            // Fallback if denied
+            if (mounted) {
+                setPosition([9.9312, 76.2673]); // Kochi Fallback
+                setErrorText("Using default Kochi coordinates. Enable GPS for live radar.");
+            }
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
-        setPosition([12.9716, 77.5946]); 
+        if (mounted) setPosition([9.9312, 76.2673]); 
     }
+    return () => { mounted = false; };
   }, []);
 
   if (!position) {
