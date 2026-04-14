@@ -244,6 +244,7 @@ export default function WorkerHome() {
            <LocationMap 
              jobs={availableJobs} 
              onApply={handleApply} 
+             initialLocation={profile?.latitude && profile?.longitude ? [profile.latitude, profile.longitude] : undefined}
              onLocationChange={async (lat, lng) => {
                try {
                  const API_URL = import.meta.env.VITE_API_URL || '';

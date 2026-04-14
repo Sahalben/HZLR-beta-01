@@ -24,6 +24,7 @@ const workerIcon = new L.DivIcon({
 interface EmployerLocationMapProps {
   activeWorkers: any[];
   onLocationChange?: (lat: number, lng: number) => void;
+  initialLocation?: [number, number];
 }
 
 const RecenterMap = ({ lat, lng }: { lat: number, lng: number }) => {
@@ -34,8 +35,8 @@ const RecenterMap = ({ lat, lng }: { lat: number, lng: number }) => {
   return null;
 };
 
-export function EmployerLocationMap({ activeWorkers, onLocationChange }: EmployerLocationMapProps) {
-  const [position, setPosition] = useState<[number, number] | null>(null);
+export function EmployerLocationMap({ activeWorkers, onLocationChange, initialLocation }: EmployerLocationMapProps) {
+  const [position, setPosition] = useState<[number, number] | null>(initialLocation || null);
   const [errorText, setErrorText] = useState("");
   const markerRef = useRef<L.Marker>(null);
 
@@ -65,17 +66,24 @@ export function EmployerLocationMap({ activeWorkers, onLocationChange }: Employe
         (err) => {
             console.warn("Geolocation blocked:", err);
             if(mounted) {
-                setPosition([9.9312, 76.2673]); // Kochi fallback
-                setErrorText("Using default city coordinates for map initialization.");
+                if (initialLocation) {
+                  setPosition(initialLocation);
+                } else {
+                  setPosition([9.9312, 76.2673]); // Kochi fallback
+                  setErrorText("Using default coordinates for map initialization.");
+                }
             }
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
       );
     } else {
-        if(mounted) setPosition([9.9312, 76.2673]); 
+        if(mounted) {
+           if (initialLocation) setPosition(initialLocation);
+           else setPosition([9.9312, 76.2673]); 
+        }
     }
     return () => { mounted = false; };
-  }, []);
+  }, [initialLocation]);
 
   if (!position) {
     return (

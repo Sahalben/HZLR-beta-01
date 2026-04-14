@@ -7,9 +7,13 @@ import { EmployerLayout } from "@/components/employer/EmployerLayout";
 import { useToast } from "@/hooks/use-toast";
 import { EmployerLocationMap } from "@/components/employer/EmployerLocationMap";
 
+import { useAuth } from "@/contexts/AuthContext";
+
 export default function EmployerHome() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { profile, user } = useAuth();
+  const employerProfile = profile as any;
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({
       activePostings: 0,
@@ -100,6 +104,7 @@ export default function EmployerHome() {
           </div>
           <EmployerLocationMap 
              activeWorkers={data.activeWorkers} 
+             initialLocation={employerProfile?.latitude && employerProfile?.longitude ? [employerProfile.latitude, employerProfile.longitude] : undefined}
              onLocationChange={async (lat, lng) => {
                try {
                  const API_URL = import.meta.env.VITE_API_URL || '';

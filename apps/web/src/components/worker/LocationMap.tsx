@@ -25,6 +25,7 @@ interface LocationMapProps {
   jobs: any[];
   onApply: (job: any) => void;
   onLocationChange?: (lat: number, lng: number) => void;
+  initialLocation?: [number, number];
 }
 
 const RecenterMap = ({ lat, lng }: { lat: number, lng: number }) => {
@@ -35,8 +36,8 @@ const RecenterMap = ({ lat, lng }: { lat: number, lng: number }) => {
   return null;
 };
 
-export function LocationMap({ jobs, onApply, onLocationChange }: LocationMapProps) {
-  const [position, setPosition] = useState<[number, number] | null>(null);
+export function LocationMap({ jobs, onApply, onLocationChange, initialLocation }: LocationMapProps) {
+  const [position, setPosition] = useState<[number, number] | null>(initialLocation || null);
   const [errorText, setErrorText] = useState("");
   const markerRef = useRef<L.Marker>(null);
 
@@ -64,20 +65,26 @@ export function LocationMap({ jobs, onApply, onLocationChange }: LocationMapProp
            if (mounted) setPosition([pos.coords.latitude, pos.coords.longitude]);
         },
         (err) => {
-            console.warn("Geolocation blocked:", err);
-            // Fallback to Kochi Center if denied
+            console.warn("Geolocation blocked or timed out:", err);
             if (mounted) {
-              setPosition([9.9312, 76.2673]);
-              setErrorText("Using default Kochi coordinates. Enable GPS for live radar.");
+              if (initialLocation) {
+                 setPosition(initialLocation);
+              } else {
+                 setPosition([9.9312, 76.2673]); // Kochi
+                 setErrorText("Using default coordinates. Enable GPS for live radar.");
+              }
             }
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
       );
     } else {
-        if (mounted) setPosition([9.9312, 76.2673]); 
+        if (mounted) {
+           if (initialLocation) setPosition(initialLocation);
+           else setPosition([9.9312, 76.2673]); 
+        }
     }
     return () => { mounted = false; };
-  }, []);
+  }, [initialLocation]);
 
   if (!position) {
     return (
