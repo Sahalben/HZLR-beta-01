@@ -8,8 +8,8 @@ export async function sendOtpEmail(to: string, otp: string) {
     console.log(`[MOCK EMAIL API] To: ${to}, OTP: ${otp}. (No RESEND_API_KEY set)`);
     return { data: { id: 'mock-email-id' } };
   }
-  return resend.emails.send({
-    from: process.env.FROM_EMAIL ?? 'noreply@hzlr.in',
+  const response = await resend.emails.send({
+    from: process.env.FROM_EMAIL ?? 'support@hzlr.online',
     to,
     subject: 'Your HZLR verification code',
     html: `
@@ -19,5 +19,11 @@ export async function sendOtpEmail(to: string, otp: string) {
       <h2>${otp}</h2>
       Expires in 5 minutes. Never share this code.
     `
-  })
+  });
+
+  if (response.error) {
+      throw new Error(`Resend Error: ${response.error.message}`);
+  }
+  
+  return response;
 }

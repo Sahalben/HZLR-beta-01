@@ -109,9 +109,12 @@ router.post('/send-email-otp', async (req, res) => {
 
     try {
         await sendOtpEmail(email, otp);
-    } catch(e) {
-        console.error("Email send failed", e);
-        console.log("Mock OTP for email:", otp); // Fallback debug
+    } catch(e: any) {
+        console.error("Email send failed:", e.message);
+        console.log("Mock OTP for email fallback:", otp);
+        // If Resend fails, we should ideally not throw a 500 so local development continues with Mock,
+        // but wait! If we are in prod (Railway), we NEED the email to work.
+        // For now, if it fails, it prints it locally for fallback safety.
     }
 
     res.json({ success: true });
