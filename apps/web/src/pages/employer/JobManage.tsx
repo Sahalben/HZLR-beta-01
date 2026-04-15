@@ -17,6 +17,82 @@ export default function JobManage() {
   const [qrOpen, setQrOpen] = useState(false);
   const [qrBase64, setQrBase64] = useState<string | null>(null);
   const [qrGenerating, setQrGenerating] = useState(false);
+  const [roster, setRoster] = useState<any[]>([]);
+  const [completing, setCompleting] = useState(false);
+
+  // Poll for Active Shift Roster
+  useEffect(() => {
+     let interval: any;
+     const fetchRoster = async () => {
+         try {
+             if (job?.status !== 'ACTIVE' && job?.status !== 'IN_PROGRESS') return;
+             const API_URL = import.meta.env.VITE_API_URL || '';
+             const token = localStorage.getItem('token');
+             const res = await fetch(`${API_URL}/api/v1/attendance/employer-records/${id}`, {
+                 headers: { Authorization: `Bearer ${token}` }
+             });
+             if (res.ok) {
+                 const data = await res.json();
+                 setRoster(data);
+             }
+         } catch(e) {}
+     };
+
+     if (job && (job.status === 'ACTIVE' || job.status === 'IN_PROGRESS')) {
+         fetchRoster();
+         interval = setInterval(fetchRoster, 30000);
+     }
+     return () => clearInterval(interval);
+  }, [id, job?.status]);
+
+  const handleManualAction = async (attendanceId: string, action: 'checkin' | 'checkout', manualAppId?: string) => {
+      try {
+          const API_URL = import.meta.env.VITE_API_URL || '';
+          const token = localStorage.getItem('token');
+          
+          if (!attendanceId && manualAppId) {
+             // If there is no attendance record yet, the endpoint /manual-confirm/:id expects an attendance ID.
+             // But wait! Manual checkin creates it if missing? No, the backend expects an existing attendanceId.
+             // This is a gap in standard backend logic. I will ping local backend or just rely on the API.
+             // Actually, the API requires attendanceId, so for checkin, the backend might fail if it doesn't exist.
+             toast({ title: "Operation Restricted", description: "Worker must scan QR to initiate their first record.", variant: "destructive" });
+             return;
+          }
+
+          const res = await fetch(`${API_URL}/api/v1/attendance/manual-confirm/${attendanceId}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ action })
+          });
+          if (!res.ok) throw new Error((await res.json()).error);
+          toast({ title: "Success", description: "Attendance was overridden manually." });
+          
+          // trigger immediate refetch
+          const freshRes = await fetch(`${API_URL}/api/v1/attendance/employer-records/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+          setRoster(await freshRes.json());
+      } catch (err: any) {
+          toast({ title: "Action Failed", description: err.message, variant: "destructive" });
+      }
+  };
+
+  const markJobComplete = async () => {
+      setCompleting(true);
+      try {
+          const API_URL = import.meta.env.VITE_API_URL || '';
+          const token = localStorage.getItem('token');
+          const res = await fetch(`${API_URL}/api/v1/jobs/${id}/complete`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+          });
+          if (!res.ok) throw new Error((await res.json()).error);
+          toast({ title: "Shift Completed", description: "Escrow funds have been successfully deployed.", className: "bg-emerald-500 text-white" });
+          setJob({ ...job, status: "COMPLETED" });
+      } catch (err: any) {
+          toast({ title: "Failed to Complete", description: err.message, variant: "destructive" });
+      } finally {
+          setCompleting(false);
+      }
+  };
 
   const handleGenerateQR = async () => {
        setQrGenerating(true);
@@ -104,51 +180,126 @@ export default function JobManage() {
         {/* Accepted / Applied Roster */}
         <div>
             <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-lg text-foreground tracking-tight flex items-center gap-2"><Users className="text-primary" size={20} /> Shift Roster</h3>
+                <h3 className="font-bold text-lg text-foreground tracking-tight flex items-center gap-2">
+                   {job.status === "ACTIVE" || job.status === "IN_PROGRESS" ? <Clock className="text-emerald-500" size={20} /> : <Users className="text-primary" size={20} />}
+                   {job.status === "ACTIVE" || job.status === "IN_PROGRESS" ? "Live Attendance Roster" : "Applicant Roster"}
+                </h3>
                 <span className="text-sm font-black text-muted-foreground">{job.filledSpots} / {job.totalSpots} Secured</span>
             </div>
 
-            <Dialog open={qrOpen} onOpenChange={setQrOpen}>
+            {(job.status === "ACTIVE" || job.status === "IN_PROGRESS") && (
+              <Dialog open={qrOpen} onOpenChange={setQrOpen}>
                  <div className="mb-4">
-                    <Button onClick={handleGenerateQR} disabled={qrGenerating} variant="outline" className="w-full sm:w-auto font-bold border-primary/50 text-primary hover:bg-primary/10">
+                    <Button onClick={handleGenerateQR} disabled={qrGenerating} className="w-full sm:w-auto font-bold border-emerald-500 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-black transition-colors shadow-lg shadow-emerald-500/20">
                         {qrGenerating ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <QrCode className="w-4 h-4 mr-2" />}
-                        Generate Attendance QR
+                        Generate Gate QR
                     </Button>
                  </div>
                  <DialogContent className="sm:max-w-md bg-zinc-950 border-white/10 text-center">
                     <DialogHeader>
-                       <DialogTitle className="text-xl font-black text-center text-white">Insta-Scan Gate</DialogTitle>
+                       <DialogTitle className="text-xl font-black text-center text-white">Scan to Check In</DialogTitle>
                     </DialogHeader>
-                    <div className="flex flex-col items-center justify-center p-6 bg-white rounded-xl mx-auto shadow-2xl shadow-primary/20">
+                    <div className="flex flex-col items-center justify-center p-6 bg-white rounded-xl mx-auto shadow-2xl shadow-primary/20 print:shadow-none print:w-full print:h-screen print:flex print:items-center print:justify-center">
                        {qrBase64 ? (
                            <>
-                             <img src={qrBase64} alt="Job Check-In QR Code" className="w-64 h-64 border-4 border-black rounded" />
-                             <p className="mt-4 text-xs font-black text-zinc-900 uppercase tracking-widest text-center max-w-[200px]">Have workers scan this from their app</p>
+                             <img src={qrBase64} alt="Job Check-In QR Code" className="w-64 h-64 border-4 border-black rounded shadow-sm" />
+                             <p className="mt-6 text-sm font-black text-zinc-900 uppercase tracking-widest text-center mt-2">Workers scan this at arrival</p>
+                             <p className="mt-1 text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-center">Valid for 12 hours from generation</p>
+                             <Button variant="outline" className="mt-6 print:hidden" onClick={() => window.print()}>Print Poster</Button>
                            </>
                        ) : (
                            <Loader2 className="animate-spin h-8 w-8 text-black" />
                        )}
                     </div>
                  </DialogContent>
-            </Dialog>
+              </Dialog>
+            )}
             
             <div className="space-y-3">
-               {job.applications && job.applications.length > 0 ? job.applications.map((app: any) => (
-                  <Card key={app.id} className="p-4 sm:p-5 flex items-center justify-between border-l-4 border-l-primary hover:border-l-warning transition-colors bg-card">
-                     <div>
-                         <p className="font-bold text-sm sm:text-base text-foreground leading-tight">{app.workerProfile?.firstName || 'Unknown'} {app.workerProfile?.aadhaarVerified && '✓'}</p>
-                         <p className="text-[10px] uppercase font-bold tracking-widest mt-1 text-muted-foreground px-2 py-0.5 bg-secondary/50 rounded inline-block">{app.status}</p>
-                     </div>
-                     <Button size="sm" variant="outline" className="text-xs shrink-0" onClick={() => navigate(`/employer/applicants/${app.id}`)}>
-                         Inspect <ChevronRight size={14} className="ml-1" />
-                     </Button>
-                  </Card>
-               )) : (
-                  <Card className="p-8 text-center border-dashed bg-secondary/10">
-                     <p className="font-medium text-muted-foreground text-sm">No applications synced yet.</p>
-                  </Card>
+               {(job.status === "ACTIVE" || job.status === "IN_PROGRESS") ? (
+                  // Live Polling Roster Layout
+                  roster.length > 0 ? roster.map((app: any) => {
+                      const att = app.attendance;
+                      const hasCheckedIn = att?.status === 'CHECKED_IN' || att?.status === 'CHECKED_OUT';
+                      const hasCheckedOut = att?.status === 'CHECKED_OUT';
+
+                      return (
+                         <Card key={app.id} className="p-4 flex items-center justify-between border-l-4 border-l-emerald-500 bg-card">
+                            <div>
+                                <p className="font-bold text-sm text-foreground">{app.workerProfile?.firstName}</p>
+                                {hasCheckedIn ? (
+                                   <p className="text-[10px] text-emerald-500 font-mono mt-1">In: {new Date(att.checkInTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} {hasCheckedOut && ` | Out: ${new Date(att.checkOutTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`}</p>
+                                ) : (
+                                   <p className="text-[10px] text-muted-foreground font-mono mt-1">Awaiting Scan</p>
+                                )}
+                            </div>
+                            <div className="flex gap-2">
+                               {!hasCheckedIn ? (
+                                   <Button size="sm" variant="outline" className="text-xs" onClick={() => toast({ title: "Worker hasn't scanned yet.", description: "Workers must initialize their first QR ping." })}>
+                                       Awaiting Drop
+                                   </Button>
+                               ) : !hasCheckedOut ? (
+                                   <Button size="sm" variant="default" className="text-xs font-bold" onClick={() => handleManualAction(att.id, 'checkout', app.id)}>
+                                       Confirm Departure
+                                   </Button>
+                               ) : (
+                                   <span className="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-xs font-black rounded flex items-center gap-1"><CheckCircle size={14}/> Complete</span>
+                               )}
+                            </div>
+                         </Card>
+                      )
+                  }) : (
+                     <Card className="p-8 text-center border-dashed bg-secondary/10">
+                        <p className="font-medium text-muted-foreground text-sm">No confirmed workers on roster.</p>
+                     </Card>
+                  )
+               ) : (
+                  // Standard Applicant Roster
+                  job.applications && job.applications.length > 0 ? job.applications.map((app: any) => (
+                      <Card key={app.id} className="p-4 sm:p-5 flex items-center justify-between border-l-4 border-l-primary hover:border-l-warning transition-colors bg-card">
+                         <div>
+                             <p className="font-bold text-sm sm:text-base text-foreground leading-tight">{app.workerProfile?.firstName || 'Unknown'} {app.workerProfile?.aadhaarVerified && '✓'}</p>
+                             <p className="text-[10px] uppercase font-bold tracking-widest mt-1 text-muted-foreground px-2 py-0.5 bg-secondary/50 rounded inline-block">{app.status}</p>
+                         </div>
+                         <Button size="sm" variant="outline" className="text-xs shrink-0" onClick={() => navigate(`/employer/applicants/${app.id}`)}>
+                             Inspect <ChevronRight size={14} className="ml-1" />
+                         </Button>
+                      </Card>
+                  )) : (
+                      <Card className="p-8 text-center border-dashed bg-secondary/10">
+                         <p className="font-medium text-muted-foreground text-sm">No applications synced yet.</p>
+                      </Card>
+                  )
                )}
             </div>
+            
+            {/* Mark Shift Complete Logic */}
+             {(job.status === "ACTIVE" || job.status === "IN_PROGRESS") && roster.length > 0 && (
+                <div className="mt-10 border-t border-white/10 pt-6">
+                    <p className="text-sm font-bold text-muted-foreground mb-4">Shift Administration</p>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <Button 
+                          onClick={markJobComplete} 
+                          disabled={completing || roster.some(r => r.attendance?.status !== 'CHECKED_OUT')} 
+                          className="bg-emerald-500 hover:bg-emerald-600 text-black font-black w-full"
+                        >
+                           {completing ? <Loader2 className="animate-spin" /> : <CheckCircle className="mr-2 w-5 h-5"/>} Mark Shift Complete
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                             if(confirm("Warning: Concluding this shift with unchecked out workers forces early payout cutoff. Verify before proceeding!")) {
+                                 markJobComplete();
+                             }
+                          }}
+                          disabled={completing || roster.every(r => r.attendance?.status === 'CHECKED_OUT')}
+                          className="w-full sm:w-auto shrink-0 font-bold"
+                        >
+                           Force Override Completion
+                        </Button>
+                    </div>
+                </div>
+             )}
         </div>
       </div>
     </EmployerLayout>

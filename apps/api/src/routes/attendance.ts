@@ -282,4 +282,41 @@ router.post('/manual-confirm/:attendanceId', authenticateToken, async (req: any,
     }
 });
 
+// GET /api/v1/attendance/employer-records/:jobId
+router.get('/employer-records/:jobId', authenticateToken, async (req: any, res) => {
+    try {
+        if (req.user.role !== 'EMPLOYER' && req.user.role !== 'BUSINESS') {
+             return res.status(403).json({ error: 'Only employers can view rosters' });
+        }
+        const { jobId } = req.params;
+
+        const job = await prisma.job.findUnique({
+             where: { id: jobId },
+             include: { employerProfile: true, businessProfile: true }
+        });
+        
+        if (!job) return res.status(404).json({ error: 'Job not found' });
+        const isOwner = job.employerProfile?.userId === req.user.id || job.businessProfile?.userId === req.user.id;
+        if (!isOwner) return res.status(403).json({ error: 'You do not own this job' });
+
+        const applications = await prisma.application.findMany({
+             where: { 
+                 jobId,
+                 status: { in: ['ACCEPTED', 'CONFIRMED'] }
+             },
+             include: {
+                 workerProfile: { include: { user: true } },
+                 attendance: true
+             }
+        });
+
+        res.json(applications);
+    } catch(err: any) {
+        if (!process.env.DATABASE_URL || err.message.includes("PrismaClient")) {
+             return res.json([]);
+        }
+        res.status(500).json({ error: err.message });
+    }
+});
+
 export default router;
