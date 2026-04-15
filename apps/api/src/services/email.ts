@@ -9,7 +9,7 @@ export async function sendOtpEmail(to: string, otp: string) {
     return { data: { id: 'mock-email-id' } };
   }
   const response = await resend.emails.send({
-    from: process.env.FROM_EMAIL ?? 'support@hzlr.online',
+    from: process.env.FROM_EMAIL ?? 'support@contact.hzlr.online',
     to,
     subject: 'Your HZLR verification code',
     html: `
