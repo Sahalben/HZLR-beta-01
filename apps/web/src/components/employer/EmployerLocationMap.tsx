@@ -58,6 +58,25 @@ export function EmployerLocationMap({ activeWorkers, onLocationChange, initialLo
 
   useEffect(() => {
     let mounted = true;
+
+    const executeIpFallback = async () => {
+        try {
+            const res = await fetch('https://ipapi.co/json/');
+            const data = await res.json();
+            if (data.latitude && data.longitude && mounted) {
+                setPosition([data.latitude, data.longitude]);
+                setErrorText(`HQ estimated near ${data.city || 'your area'}. Drag dot to your exact building!`);
+            } else {
+                throw new Error("Invalid IP Data");
+            }
+        } catch (ipErr) {
+            if (mounted) {
+                setPosition([9.9312, 76.2673]); // Kochi fallback
+                setErrorText("Default map loaded. Drag pin to manually set HQ.");
+            }
+        }
+    };
+
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -69,17 +88,16 @@ export function EmployerLocationMap({ activeWorkers, onLocationChange, initialLo
                 if (initialLocation) {
                   setPosition(initialLocation);
                 } else {
-                  setPosition([9.9312, 76.2673]); // Kochi fallback
-                  setErrorText("Using default coordinates for map initialization.");
+                  executeIpFallback();
                 }
             }
         },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
       );
     } else {
         if(mounted) {
            if (initialLocation) setPosition(initialLocation);
-           else setPosition([9.9312, 76.2673]); 
+           else executeIpFallback(); 
         }
     }
     return () => { mounted = false; };
