@@ -19,6 +19,7 @@ export default function JobManage() {
   const [qrGenerating, setQrGenerating] = useState(false);
   const [roster, setRoster] = useState<any[]>([]);
   const [completing, setCompleting] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   // Poll for Active Shift Roster
   useEffect(() => {
@@ -113,6 +114,25 @@ export default function JobManage() {
        }
   };
 
+  const handlePublishDraft = async () => {
+       setPublishing(true);
+       try {
+           const API_URL = import.meta.env.VITE_API_URL || '';
+           const token = localStorage.getItem('token');
+           const res = await fetch(`${API_URL}/api/v1/jobs/${id}/publish`, {
+               method: 'POST',
+               headers: { Authorization: `Bearer ${token}` }
+           });
+           if (!res.ok) throw new Error("Failed to publish draft");
+           toast({ title: "Job Published!", description: "Your job is now active on the Worker Feed.", className: "bg-emerald-500 text-white" });
+           setJob({ ...job, status: "ACTIVE" });
+       } catch (err) {
+           toast({ title: "Error", description: "Could not publish draft.", variant: "destructive" });
+       } finally {
+           setPublishing(false);
+       }
+  };
+
   useEffect(() => {
      const fetchJobDetail = async () => {
          try {
@@ -157,6 +177,17 @@ export default function JobManage() {
         <Link to="/employer/postings" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors font-medium text-sm">
           <ArrowLeft size={16} /> Back to Postings
         </Link>
+
+        {/* Draft Recovery Banner */}
+        {job.status === "DRAFT" && (
+           <Card className="p-6 border border-warning bg-warning/10 text-center space-y-3">
+               <h3 className="font-black text-warning text-lg tracking-tight">Draft Notice</h3>
+               <p className="text-sm font-medium text-foreground max-w-md mx-auto">This job bypassed pre-funding and stalled in Draft state. Click underneath to force override and publish the job instantly onto the Worker Feed.</p>
+               <Button onClick={handlePublishDraft} disabled={publishing} className="bg-warning hover:bg-warning/80 text-black font-black w-full sm:w-auto">
+                   {publishing ? <Loader2 className="animate-spin mr-2 w-4 h-4" /> : null} Force Publish to Feed
+               </Button>
+           </Card>
+        )}
 
         {/* Core Job Metrics */}
         <Card variant="elevated" className="p-6">

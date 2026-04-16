@@ -100,7 +100,8 @@ router.post('/', authenticateToken, async (req: any, res) => {
                     payPerWorker,
                     totalSpots,
                     isPrefunded,
-                    employerProfileId
+                    employerProfileId,
+                    status: 'ACTIVE' // Hotwired for Beta testing MVP
                 }
             });
 
@@ -147,6 +148,23 @@ router.get('/:id', authenticateToken, async (req: any, res) => {
     } catch(err: any) {
         if (!process.env.DATABASE_URL || err.message.includes("PrismaClient")) {
              return res.json({ id: req.params.id, title: "Mock Job", status: "ACTIVE", payPerWorker: 600, scheduledFor: new Date().toISOString() });
+        }
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// EMERGENCY OVERRIDE: Publish a Draft
+router.post('/:id/publish', authenticateToken, async (req: any, res) => {
+    try {
+        const jobId = req.params.id;
+        const job = await prisma.job.update({
+            where: { id: jobId },
+            data: { status: 'ACTIVE' }
+        });
+        res.json(job);
+    } catch (err: any) {
+        if (!process.env.DATABASE_URL || err.message.includes("PrismaClient")) {
+             return res.json({ id: req.params.id, status: 'ACTIVE' });
         }
         res.status(500).json({ error: err.message });
     }
