@@ -1,6 +1,8 @@
-import { Link, useLocation } from "react-router-dom";
-import { Home, Search, MessageSquare, User, Bell, ClipboardCheck } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Home, Search, MessageSquare, User, Bell, ClipboardCheck, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 interface WorkerLayoutProps {
   children: React.ReactNode;
@@ -10,7 +12,9 @@ interface WorkerLayoutProps {
 
 export function WorkerLayout({ children, title, showHeader = true }: WorkerLayoutProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname;
+  const { signOut } = useAuth();
 
   const navItems = [
     { icon: Home, label: "Home", href: "/worker/home" },
@@ -33,6 +37,9 @@ export function WorkerLayout({ children, title, showHeader = true }: WorkerLayou
               <Bell size={20} />
               <span className="absolute -top-1 -right-1 w-2 h-2 bg-success rounded-full" />
             </Link>
+            <Button variant="ghost" size="icon" onClick={() => { signOut(); navigate('/login'); }} className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-white/10" title="Sign Out">
+                 <LogOut size={18} />
+            </Button>
           </div>
         </header>
       )}

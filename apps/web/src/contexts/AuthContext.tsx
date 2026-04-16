@@ -286,6 +286,17 @@ export function useOnboardingGuard() {
       }
       return;
     }
+
+    if (user && profile) {
+      if (currentPath.startsWith('/worker') && profile.role === 'EMPLOYER') {
+          navigate('/employer/home', { replace: true });
+          return;
+      }
+      if (currentPath.startsWith('/employer') && profile.role === 'WORKER') {
+          navigate('/worker/home', { replace: true });
+          return;
+      }
+    }
   }, [user, profile, loading, navigate, location.pathname]);
 }
 

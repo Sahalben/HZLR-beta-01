@@ -1,7 +1,8 @@
-import { Link, useLocation } from "react-router-dom";
-import { Home, Plus, Users, MessageSquare, FileText, Bell, UserCheck, ClipboardCheck } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Home, Plus, Users, MessageSquare, FileText, Bell, UserCheck, ClipboardCheck, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface EmployerLayoutProps {
   children: React.ReactNode;
@@ -11,7 +12,9 @@ interface EmployerLayoutProps {
 
 export function EmployerLayout({ children, title, companyName = "HZLR Business" }: EmployerLayoutProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname;
+  const { signOut } = useAuth();
 
   const navItems = [
     { icon: Home, label: "Dashboard", href: "/employer/home" },
@@ -69,6 +72,9 @@ export function EmployerLayout({ children, title, companyName = "HZLR Business" 
                 Post Job
               </Link>
             </Button>
+            <Button variant="ghost" size="sm" onClick={() => { signOut(); navigate('/login'); }} className="hidden md:flex text-primary-foreground/70 hover:text-primary-foreground hover:bg-white/10" title="Sign Out">
+                 <LogOut size={16} />
+            </Button>
           </div>
         </div>
       </header>
@@ -105,6 +111,13 @@ export function EmployerLayout({ children, title, companyName = "HZLR Business" 
             </Link>
           );
         })}
+        <button
+           onClick={() => { signOut(); navigate('/login'); }}
+           className="flex flex-col items-center gap-1 py-1 px-2 transition-colors text-muted-foreground hover:text-destructive"
+        >
+            <LogOut size={18} />
+            <span className="text-[10px]">Logout</span>
+        </button>
       </nav>
     </div>
   );
