@@ -46,4 +46,27 @@ router.post('/', authenticateToken, async (req: any, res) => {
     }
 });
 
+// GET My Applications (Worker)
+router.get('/worker', authenticateToken, async (req: any, res) => {
+    try {
+        const profile = await prisma.workerProfile.findUnique({ where: { userId: req.user.id } });
+        if (!profile) return res.status(403).json({ error: 'Worker profile not found' });
+        
+        const apps = await prisma.application.findMany({
+            where: { workerProfileId: profile.id },
+            include: { 
+                 job: { include: { employerProfile: true, businessProfile: true } },
+                 attendance: true 
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(apps);
+    } catch(err: any) {
+        if (!process.env.DATABASE_URL || err.message.includes("PrismaClient")) {
+             return res.json([]);
+        }
+        res.status(500).json({ error: err.message });
+    }
+});
+
 export default router;

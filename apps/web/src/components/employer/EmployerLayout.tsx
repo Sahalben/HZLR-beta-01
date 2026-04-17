@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Plus, Users, MessageSquare, FileText, Bell, UserCheck, ClipboardCheck, LogOut } from "lucide-react";
+import { Home, Plus, Users, MessageSquare, FileText, Bell, UserCheck, ClipboardCheck, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,8 +22,8 @@ export function EmployerLayout({ children, title, companyName = "HZLR Business" 
     { icon: Users, label: "Postings", href: "/employer/postings" },
     { icon: ClipboardCheck, label: "Attendance", href: "/employer/attendance" },
     { icon: UserCheck, label: "Employees", href: "/employer/employees" },
-    { icon: MessageSquare, label: "Messages", href: "/employer/messages" },
     { icon: FileText, label: "Invoices", href: "/employer/invoices" },
+    { icon: User, label: "Profile", href: "/employer/profile" },
   ];
 
   return (

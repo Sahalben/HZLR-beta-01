@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 interface GigCardProps {
-  id: number;
+  id: number | string;
   title: string;
   employer: string;
   pay: number;

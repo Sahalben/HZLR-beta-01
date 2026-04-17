@@ -45,6 +45,7 @@ import Employees from "./pages/employer/Employees";
 import EmployeeDetail from "./pages/employer/EmployeeDetail";
 import EmployerOnboarding from "./pages/employer/onboarding/EmployerOnboarding";
 import JobManage from "./pages/employer/JobManage";
+import EmployerProfile from "./pages/employer/Profile";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +102,7 @@ const App = () => (
           <Route path="/employer/attendance" element={<EmployerAttendance />} />
           <Route path="/employer/employees" element={<Employees />} />
           <Route path="/employer/employees/:workerId" element={<EmployeeDetail />} />
+          <Route path="/employer/profile" element={<EmployerProfile />} />
           <Route path="/employer/signup" element={<Navigate to="/signup" replace />} />
           
             {/* Catch-all */}

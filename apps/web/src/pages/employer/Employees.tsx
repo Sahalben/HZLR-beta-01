@@ -36,16 +36,25 @@ export default function Employees() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [liveEmployees, setLiveEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
+  const [employerType, setEmployerType] = useState("company");
 
   useEffect(() => {
-     const fetchEmployees = async () => {
+     const fetchData = async () => {
          try {
-             const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+             const API_URL = import.meta.env.VITE_API_URL || '';
              const token = localStorage.getItem('token');
-             const res = await fetch(`${API_URL}/api/v1/employers/employees`, {
-                 headers: { Authorization: `Bearer ${token}` }
-             });
-             if (res.ok) {
+             
+             const [profRes, empRes] = await Promise.all([
+                 fetch(`${API_URL}/api/v1/employers/profile`, { headers: { Authorization: `Bearer ${token}` } }),
+                 fetch(`${API_URL}/api/v1/employers/employees`, { headers: { Authorization: `Bearer ${token}` } })
+             ]);
+
+             if (profRes.ok) {
+                 const profData = await profRes.json();
+                 if (profData.employerType) setEmployerType(profData.employerType);
+             }
+
+             if (empRes.ok) {
                  const data = await res.json();
                  // Map to required filter syntax
                  const mapped = data.map((w: any) => ({
@@ -75,7 +84,7 @@ export default function Employees() {
              setLoading(false);
          }
      };
-     fetchEmployees();
+     fetchData();
   }, [toast]);
 
   const filteredEmployees = useMemo(() => {
@@ -192,32 +201,62 @@ export default function Employees() {
         {loading ? (
            <div className="flex justify-center p-10"><Loader2 className="animate-spin text-primary w-8 h-8" /></div>
         ) : (
-           <>
-             {/* Filters */}
-             <EmployeeFilters
-          filters={filters}
-          onFiltersChange={setFilters}
-          onExport={handleExportCSV}
-          totalCount={filteredEmployees.length}
-        />
+           employerType === "company" ? (
+             <>
+               {/* Filters */}
+               <EmployeeFilters
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                  onExport={handleExportCSV}
+                  totalCount={filteredEmployees.length}
+               />
 
-        {/* Bulk Actions Bar */}
-        {selectedIds.length > 0 && (
-          <BulkActionsBar
-            selectedCount={selectedIds.length}
-            onAction={handleBulkAction}
-            onClear={() => setSelectedIds([])}
-          />
-        )}
+               {/* Bulk Actions Bar */}
+               {selectedIds.length > 0 && (
+                  <BulkActionsBar
+                    selectedCount={selectedIds.length}
+                    onAction={handleBulkAction}
+                    onClear={() => setSelectedIds([])}
+                  />
+               )}
 
-        {/* Employee Table */}
-        <EmployeeTable
-          employees={filteredEmployees}
-          selectedIds={selectedIds}
-          onSelectAll={handleSelectAll}
-          onSelectOne={handleSelectOne}
-        />
-        </>
+               {/* Employee Table */}
+               <EmployeeTable
+                  employees={filteredEmployees}
+                  selectedIds={selectedIds}
+                  onSelectAll={handleSelectAll}
+                  onSelectOne={handleSelectOne}
+               />
+             </>
+           ) : (
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredEmployees.length === 0 ? (
+                   <div className="col-span-full p-10 text-center text-muted-foreground border rounded-xl border-dashed">No recent hires found.</div>
+                ) : (
+                   filteredEmployees.map(emp => (
+                      <div key={emp.id} className="p-5 border rounded-xl bg-card hover:border-primary/50 transition-colors shadow-sm">
+                         <div className="flex items-center gap-4 mb-4">
+                           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
+                              {emp.name.charAt(0)}
+                           </div>
+                           <div>
+                              <h3 className="font-bold text-foreground">{emp.name}</h3>
+                              <p className="text-xs text-muted-foreground">{emp.preferredCategory}</p>
+                           </div>
+                         </div>
+                         <div className="space-y-2 text-sm text-muted-foreground">
+                            <div className="flex justify-between border-b border-border/50 pb-2"><span>Reliability</span> <span className="font-medium text-foreground text-success">{emp.reliabilityScore}%</span></div>
+                            <div className="flex justify-between border-b border-border/50 pb-2"><span>Total Gigs done for you</span> <span className="font-medium text-foreground">{emp.totalGigs}</span></div>
+                            <div className="flex justify-between"><span>Last Worked</span> <span className="font-medium text-foreground">{new Date(emp.lastWorkedDate).toLocaleDateString()}</span></div>
+                         </div>
+                         <Button variant="outline" className="w-full mt-4 bg-primary/5 border-primary/20 hover:bg-primary hover:text-primary-foreground">
+                            View Profile
+                         </Button>
+                      </div>
+                   ))
+                )}
+             </div>
+           )
         )}
       </div>
     </EmployerLayout>
