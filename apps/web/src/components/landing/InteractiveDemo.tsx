@@ -129,54 +129,65 @@ export function InteractiveDemo() {
               )}
 
               {state === "results" && (
-                 <div className="animate-fade-in">
-                    <div className="text-center mb-8">
-                       <h3 className="text-2xl font-black text-foreground">
-                          {Math.floor(Math.random() * 50) + 12} {metrics.match}
-                       </h3>
-                       <p className="text-primary font-bold mt-1 tracking-wide uppercase text-sm">
-                          Live Data Pinged Successfully
-                       </p>
-                    </div>
+                 <div className="animate-fade-in relative w-full h-[450px] rounded-3xl overflow-hidden bg-black/60 border border-white/10 shadow-inner group">
+                    
+                    {/* Geographic Grid Pattern */}
+                    <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.8) 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+                    
+                    {/* Radar Concentric Rings */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] border border-primary/10 rounded-full"></div>
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-primary/20 rounded-full"></div>
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] border border-primary/30 rounded-full"></div>
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[200px] border border-primary/50 rounded-full bg-primary/5"></div>
+                    
+                    {/* Radar Center Ping */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-primary rounded-full shadow-[0_0_20px_rgba(var(--primary),1)] animate-pulse"></div>
 
-                    {/* Faux Grid & Glass Overlay Lock */}
-                    <div className="relative">
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {[1, 2, 3, 4].map((i) => (
-                             <div key={i} className="p-5 rounded-2xl bg-secondary/30 border border-white/5 flex gap-4 items-start filter blur-[2px] opacity-70 select-none">
-                                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                                   {mode === "hire" ? <Users size={20} className="text-primary" /> : <Briefcase size={20} className="text-primary" />}
-                                </div>
-                                <div className="flex-1 space-y-2">
-                                   <div className="h-4 bg-muted/60 rounded w-2/3"></div>
-                                   <div className="h-3 bg-muted/40 rounded w-1/2"></div>
-                                   <div className="flex gap-2 pt-2">
-                                     <div className="h-2 bg-success/40 rounded w-16"></div>
-                                     <div className="h-2 bg-info/40 rounded w-16"></div>
-                                   </div>
-                                </div>
-                             </div>
-                          ))}
-                       </div>
+                    {/* Radar Sweeper Element */}
+                    <div className="absolute top-1/2 left-1/2 w-[400px] h-[400px] origin-top-left border-l-2 border-primary/80 bg-gradient-to-r from-primary/30 to-transparent animate-[spin_4s_linear_infinite]" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%)' }}></div>
 
-                       {/* The Lock Overlay */}
-                       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-gradient-to-t from-background via-background/90 to-transparent pt-20">
-                          <div className="bg-card/90 backdrop-blur-2xl border border-white/10 p-8 rounded-3xl text-center shadow-[0_0_50px_-12px_rgba(var(--primary),0.3)] max-w-sm w-full mx-4 animate-scale-in">
-                             <div className="w-14 h-14 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-primary/30">
-                                <Lock size={24} className="text-primary" />
-                             </div>
-                             <h4 className="text-xl font-black text-foreground mb-2 tracking-tight">Database Locked</h4>
-                             <p className="text-sm font-medium text-muted-foreground mb-6">
-                                Create an account to interact with these {mode === "hire" ? "workers" : "gigs"} and unlock full platform features.
-                             </p>
-                             <Button asChild size="lg" className="w-full text-md h-12 shadow-primary/25 shadow-lg group">
-                                <Link to={mode === "hire" ? "/employer/signup" : "/worker/signup"}>
-                                   Unlock Network <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
-                                </Link>
-                             </Button>
+                    {/* Dynamic Map Pins & Avatars */}
+                    {mode === "hire" ? (
+                       <>
+                         <div className="absolute top-[25%] left-[30%] animate-bounce delay-100"><img src="https://i.pravatar.cc/100?img=11" className="w-10 h-10 rounded-full border-2 border-primary shadow-[0_0_15px_rgba(var(--primary),0.6)]" alt="Worker"/></div>
+                         <div className="absolute top-[60%] left-[70%] animate-bounce delay-300"><img src="https://i.pravatar.cc/100?img=33" className="w-12 h-12 rounded-full border-2 border-primary shadow-[0_0_15px_rgba(var(--primary),0.6)]" alt="Worker"/></div>
+                         <div className="absolute top-[20%] left-[75%] animate-bounce delay-500"><img src="https://i.pravatar.cc/100?img=47" className="w-8 h-8 rounded-full border-2 border-primary shadow-[0_0_15px_rgba(var(--primary),0.6)]" alt="Worker"/></div>
+                         <div className="absolute top-[75%] left-[25%] animate-bounce delay-700"><img src="https://i.pravatar.cc/100?img=12" className="w-11 h-11 rounded-full border-2 border-primary shadow-[0_0_15px_rgba(var(--primary),0.6)]" alt="Worker"/></div>
+                         <div className="absolute top-[45%] left-[85%] animate-bounce delay-200"><img src="https://i.pravatar.cc/100?img=68" className="w-9 h-9 rounded-full border-2 border-primary shadow-[0_0_15px_rgba(var(--primary),0.6)]" alt="Worker"/></div>
+                       </>
+                    ) : (
+                       <>
+                         <div className="absolute top-[30%] left-[40%] animate-pulse"><MapPin className="text-emerald-400 fill-emerald-400/20 h-10 w-10 drop-shadow-[0_0_10px_rgba(52,211,153,0.8)]" /></div>
+                         <div className="absolute top-[60%] left-[70%] animate-[pulse_2s_ease-in-out_infinite]"><MapPin className="text-emerald-400 fill-emerald-400/20 h-8 w-8 drop-shadow-[0_0_10px_rgba(52,211,153,0.8)]" /></div>
+                         <div className="absolute top-[20%] left-[80%] animate-[pulse_3s_ease-in-out_infinite]"><MapPin className="text-emerald-400 fill-emerald-400/20 h-12 w-12 drop-shadow-[0_0_10px_rgba(52,211,153,0.8)]" /></div>
+                         <div className="absolute top-[70%] left-[20%] animate-[pulse_1.5s_ease-in-out_infinite]"><MapPin className="text-emerald-400 fill-emerald-400/20 h-7 w-7 drop-shadow-[0_0_10px_rgba(52,211,153,0.8)]" /></div>
+                       </>
+                    )}
+
+                    {/* Friendly Floating Lead Capture Card */}
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-20">
+                       <div className="bg-card/80 backdrop-blur-2xl border border-white/20 p-6 rounded-2xl text-center shadow-2xl transition-transform hover:-translate-y-1">
+                          
+                          <div className="inline-flex items-center justify-center p-2 bg-success/20 text-success rounded-full mb-3">
+                             <CheckCircle2 size={24} className="fill-success/20" />
                           </div>
+                          
+                          <h4 className="text-2xl font-black text-foreground mb-1 leading-tight">
+                             Match Found!
+                          </h4>
+                          <p className="text-sm font-medium text-muted-foreground mb-5 px-2">
+                             We pinpointed <span className="text-primary font-bold">{Math.floor(Math.random() * 50) + 12} {mode === "hire" ? "verified workers" : "active gigs"}</span> right in your radius.
+                          </p>
+                          
+                          <Button asChild size="lg" className="w-full h-12 text-md font-bold shadow-primary/25 shadow-lg group rounded-xl">
+                             <Link to={mode === "hire" ? "/employer/signup" : "/worker/signup"}>
+                                {mode === "hire" ? "Connect & Hire Instantly" : "Start Earning Now"} 
+                                <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                             </Link>
+                          </Button>
                        </div>
                     </div>
+                    
                  </div>
               )}
            </div>
