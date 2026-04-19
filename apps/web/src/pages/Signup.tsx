@@ -1,57 +1,58 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Briefcase, User, Mail, Lock, Loader2, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Mail, Lock, Loader2, CheckCircle2, Eye, EyeOff, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-
-type UserRole = "worker" | "employer" | null;
+import { cn } from "@/lib/utils";
 
 const getPasswordStrength = (pass: string) => {
   let score = 0;
-  if (!pass) return { score: 0, text: '', color: 'bg-muted' };
+  if (!pass) return { score: 0, text: "", color: "bg-muted", textColor: "text-muted-foreground" };
   if (pass.length > 7) score += 1;
   if (/[A-Z]/.test(pass)) score += 1;
   if (/[0-9]/.test(pass)) score += 1;
   if (/[^A-Za-z0-9]/.test(pass)) score += 1;
-
-  if (score < 2) return { score, text: 'Weak', color: 'bg-destructive' };
-  if (score < 4) return { score, text: 'Medium', color: 'bg-yellow-500' };
-  return { score, text: 'Strong', color: 'bg-success' };
+  if (score < 2) return { score, text: "Weak", color: "bg-destructive", textColor: "text-destructive" };
+  if (score < 4) return { score, text: "Medium", color: "bg-yellow-500", textColor: "text-yellow-500" };
+  return { score, text: "Strong", color: "bg-emerald-500", textColor: "text-emerald-500" };
 };
 
 export default function Signup() {
   const navigate = useNavigate();
-  const [role, setRole] = useState<UserRole>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signupWithEmail } = useAuth();
 
+  const strength = getPasswordStrength(password);
+  const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
+  const canSubmit = email && password.length >= 8 && passwordsMatch;
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!role) return;
     if (password !== confirmPassword) {
-      toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
+      toast({ title: "Passwords don't match", description: "Please check both fields.", variant: "destructive" });
       return;
     }
 
     setLoading(true);
     try {
-      await signupWithEmail(email, password, role);
+      // Role is collected downstream at /signup/role — pass a neutral placeholder
+      await signupWithEmail(email, password, "worker");
       toast({
-        title: "Account Created",
-        description: "Please verify your email address to continue.",
+        title: "Account created!",
+        description: "Check your email for a verification code.",
       });
-      // Redirect to the new Email OTP verifier, passing email in state
       navigate("/signup/verify-email", { state: { email } });
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to create account",
+        title: "Signup failed",
+        description: error.message || "Something went wrong. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -59,171 +60,154 @@ export default function Signup() {
     }
   };
 
-  const strength = getPasswordStrength(password);
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="p-4">
-        {role ? (
-          <button onClick={() => setRole(null)} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft size={20} />
-            <span className="font-medium">Back to Roles</span>
-          </button>
-        ) : (
-          <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft size={20} />
-            <span className="font-medium">Back</span>
+      {/* Header */}
+      <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft size={18} />
+            <span className="text-sm font-medium">Back</span>
           </Link>
-        )}
+          <Link to="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">H</span>
+            </div>
+            <span className="font-semibold text-foreground">HZLR</span>
+          </Link>
+          <div className="w-20" />
+        </div>
       </header>
 
       <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-lg">
+        <div className="w-full max-w-md">
+          {/* Heading */}
           <div className="text-center mb-8">
-            <Link to="/" className="inline-block">
-              <span className="text-4xl font-black text-foreground tracking-tight">
-                HZLR<span className="text-seafoam">.</span>
-              </span>
-            </Link>
-            <h1 className="text-2xl font-bold text-foreground mt-4">
-              {role ? "Create Account" : "Get Started"}
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              {role ? "Enter your email and a strong password" : "Choose how you want to use HZLR"}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-4">
+              <Sparkles size={13} className="text-primary" />
+              <span className="text-xs font-semibold text-primary">Join thousands earning daily</span>
+            </div>
+            <h1 className="text-3xl font-black text-foreground tracking-tight mb-2">Create your account</h1>
+            <p className="text-muted-foreground text-sm">
+              Takes less than 2 minutes. No credit card needed.
             </p>
           </div>
 
-          {!role ? (
-            <div className="grid md:grid-cols-2 gap-4">
-              <Card
-                variant="elevated"
-                className="p-6 cursor-pointer hover:border-primary hover:border-2 transition-all group"
-                onClick={() => setRole("worker")}
-              >
-                <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <User size={32} className="text-emerald-500" />
+          {/* Form Card */}
+          <div className="bg-card/60 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl p-6 space-y-5">
+            <form onSubmit={handleSignup} className="space-y-5">
+              {/* Email */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Email address</label>
+                <div className="relative">
+                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="email"
+                    required
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10 h-12 bg-background/60 border-white/10 focus-visible:ring-primary"
+                  />
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">I'm a Worker</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Find daily gigs, get paid instantly, and build your digital resume.
-                </p>
-                <Button variant="default" className="w-full group-hover:bg-emerald-600">
-                  Start Working
-                  <ArrowRight size={16} />
-                </Button>
-              </Card>
+              </div>
 
-              <Card
-                variant="elevated"
-                className="p-6 cursor-pointer hover:border-primary hover:border-2 transition-all group"
-                onClick={() => setRole("employer")}
-              >
-                <div className="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <Briefcase size={32} className="text-blue-500" />
+              {/* Password */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Password</label>
+                <div className="relative">
+                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    minLength={8}
+                    autoComplete="new-password"
+                    placeholder="Min. 8 characters"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 pr-10 h-12 bg-background/60 border-white/10 focus-visible:ring-primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(v => !v)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">I'm an Employer</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Hire verified workers, prefund gigs, and fill positions fast.
-                </p>
-                <Button variant="default" className="w-full group-hover:bg-blue-600">
-                  Start Hiring
-                  <ArrowRight size={16} />
-                </Button>
-              </Card>
-            </div>
-          ) : (
-            <Card variant="elevated" className="p-6">
-              <form onSubmit={handleSignup} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      type="email"
-                      required
-                      placeholder="Enter your email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      type="password"
-                      required
-                      minLength={8}
-                      placeholder="Create a strong password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                  
-                  {/* Strength Meter */}
-                  {password.length > 0 && (
-                    <div className="mt-2 flex items-center gap-2">
-                      <div className="flex-1 flex gap-1 h-1.5 rounded-full overflow-hidden bg-muted">
-                        <div className={`h-full ${strength.score >= 1 ? strength.color : 'bg-transparent'} w-1/4 transition-colors duration-300`} />
-                        <div className={`h-full ${strength.score >= 2 ? strength.color : 'bg-transparent'} w-1/4 transition-colors duration-300`} />
-                        <div className={`h-full ${strength.score >= 3 ? strength.color : 'bg-transparent'} w-1/4 transition-colors duration-300`} />
-                        <div className={`h-full ${strength.score >= 4 ? strength.color : 'bg-transparent'} w-1/4 transition-colors duration-300`} />
-                      </div>
-                      <span className={`text-xs font-semibold ${strength.color.replace('bg-', 'text-')}`}>
-                        {strength.text}
-                      </span>
+                {/* Strength meter */}
+                {password.length > 0 && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <div className="flex-1 flex gap-1 h-1.5">
+                      {[1, 2, 3, 4].map(i => (
+                        <div
+                          key={i}
+                          className={cn("flex-1 rounded-full transition-all duration-300",
+                            strength.score >= i ? strength.color : "bg-muted"
+                          )}
+                        />
+                      ))}
                     </div>
-                  )}
-                </div>
+                    <span className={cn("text-xs font-semibold w-12 text-right", strength.textColor)}>{strength.text}</span>
+                  </div>
+                )}
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Retype Password
-                  </label>
-                  <div className="relative">
-                    <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      type="password"
-                      required
-                      placeholder="Confirm your password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-10"
-                    />
-                    {confirmPassword.length > 0 && password === confirmPassword && (
-                      <CheckCircle2 size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-success" />
+              {/* Confirm */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Confirm password</label>
+                <div className="relative">
+                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type={showConfirm ? "text" : "password"}
+                    required
+                    autoComplete="new-password"
+                    placeholder="Repeat your password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={cn(
+                      "pl-10 pr-10 h-12 bg-background/60 border-white/10 focus-visible:ring-primary",
+                      passwordsMatch && "border-emerald-500/40"
                     )}
+                  />
+                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                    {passwordsMatch && <CheckCircle2 size={16} className="text-emerald-500" />}
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirm(v => !v)}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
                   </div>
                 </div>
+              </div>
 
-                <Button
-                  type="submit"
-                  variant="default"
-                  size="lg"
-                  className="w-full mt-4"
-                  disabled={loading || !email || password.length < 8 || password !== confirmPassword}
-                >
-                  {loading ? (
-                    <Loader2 size={20} className="animate-spin" />
-                  ) : (
-                    "Create Account"
-                  )}
-                </Button>
-              </form>
-            </Card>
-          )}
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full h-12 font-bold shadow-lg shadow-primary/20 mt-2"
+                disabled={loading || !canSubmit}
+              >
+                {loading ? (
+                  <><Loader2 size={18} className="animate-spin mr-2" /> Creating account...</>
+                ) : (
+                  "Create Account"
+                )}
+              </Button>
+            </form>
 
-          <p className="text-center text-sm text-muted-foreground mt-8">
+            <p className="text-center text-xs text-muted-foreground">
+              By signing up, you agree to our{" "}
+              <span className="text-primary hover:underline cursor-pointer">Terms</span> and{" "}
+              <span className="text-primary hover:underline cursor-pointer">Privacy Policy</span>
+            </p>
+          </div>
+
+          <p className="text-center text-sm text-muted-foreground mt-6">
             Already have an account?{" "}
-            <Link to="/login" className="text-seafoam font-medium hover:underline">
+            <Link to="/login" className="text-primary font-semibold hover:underline">
               Log in
             </Link>
           </p>
