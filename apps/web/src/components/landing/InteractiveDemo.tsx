@@ -13,6 +13,13 @@ export function InteractiveDemo() {
   const [state, setState] = useState<DemoState>("idle");
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
+  const [showLocOpts, setShowLocOpts] = useState(false);
+  const [showCatOpts, setShowCatOpts] = useState(false);
+
+  const CITIES = ["Mumbai, MH", "Delhi, DL", "Bangalore, KA", "Hyderabad, TG", "Pune, MH", "Gurgaon, HR"];
+  const CATEGORIES = mode === "hire" 
+      ? ["Loading/Unloading", "Warehouse Worker", "Event Hospitality", "General Helper", "Plumber"]
+      : ["Barista", "Delivery Partner", "Brand Promoter", "Retail Staff", "Electrician"];
 
   // Simulated metrics based on mode
   const metrics = mode === "hire" 
@@ -82,26 +89,48 @@ export function InteractiveDemo() {
            </div>
 
            {/* Search Form */}
-           <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 max-w-3xl mx-auto mb-10">
+           <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 max-w-3xl mx-auto mb-10 relative">
               <div className="relative flex-1">
                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                  <Input 
                    value={category}
-                   onChange={(e) => setCategory(e.target.value)}
-                   placeholder={mode === "hire" ? "e.g., Electrician, Warehouse, Waiter" : "e.g., Barista, Delivery, Event Staff"}
+                   onChange={(e) => { setCategory(e.target.value); setShowCatOpts(true); }}
+                   onFocus={() => setShowCatOpts(true)}
+                   onBlur={() => setTimeout(() => setShowCatOpts(false), 200)}
+                   placeholder={mode === "hire" ? "e.g., Warehouse, Event Staff" : "e.g., Barista, Delivery"}
                    className="pl-12 h-14 bg-background/50 border-white/10 text-lg focus-visible:ring-primary rounded-xl"
                    required
                  />
+                 {showCatOpts && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-card/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden text-left p-1 animate-in fade-in slide-in-from-top-2">
+                       {CATEGORIES.filter(c => c.toLowerCase().includes(category.toLowerCase())).slice(0, 4).map(c => (
+                          <button key={c} type="button" onMouseDown={() => setCategory(c)} className="w-full text-left px-4 py-3 rounded-lg hover:bg-secondary/50 text-sm font-medium transition-colors">
+                             {c}
+                          </button>
+                       ))}
+                    </div>
+                 )}
               </div>
               <div className="relative flex-1">
                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                  <Input 
                    value={location}
-                   onChange={(e) => setLocation(e.target.value)}
-                   placeholder="Enter your location or ZIP"
+                   onChange={(e) => { setLocation(e.target.value); setShowLocOpts(true); }}
+                   onFocus={() => setShowLocOpts(true)}
+                   onBlur={() => setTimeout(() => setShowLocOpts(false), 200)}
+                   placeholder="Enter city or ZIP"
                    className="pl-12 h-14 bg-background/50 border-white/10 text-lg focus-visible:ring-primary rounded-xl"
                    required
                  />
+                 {showLocOpts && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-card/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden text-left p-1 animate-in fade-in slide-in-from-top-2">
+                       {CITIES.filter(c => c.toLowerCase().includes(location.toLowerCase())).slice(0, 4).map(c => (
+                          <button key={c} type="button" onMouseDown={() => setLocation(c)} className="w-full text-left px-4 py-3 rounded-lg hover:bg-secondary/50 text-sm font-medium transition-colors">
+                             <MapPin size={14} className="inline mr-2 text-muted-foreground" /> {c}
+                          </button>
+                       ))}
+                    </div>
+                 )}
               </div>
               <Button type="submit" disabled={state === "searching"} className="h-14 px-8 rounded-xl text-lg font-bold shadow-lg shadow-primary/20 md:w-auto w-full">
                  {state === "searching" ? <Loader2 className="animate-spin text-primary-foreground" /> : "Search Live"}
@@ -137,22 +166,25 @@ export function InteractiveDemo() {
                     <div className="absolute inset-0 border-b border-l border-white/5 left-[30%] top-[30%] rounded-bl-[100px]"></div>
 
                     {/* Fading in Real Feature Previews */}
-                    <div className="absolute inset-0 pb-24 flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 px-4">
+                    <div className="absolute inset-0 pb-32 flex flex-row flex-wrap content-center justify-center gap-4 px-4 overflow-hidden">
                         {mode === "hire" ? (
                            <>
                               {/* Worker Preview Cards */}
                               {[11, 33, 47].map((num, idx) => (
                                  <div 
                                     key={num} 
-                                    className="bg-card/90 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex items-center gap-4 shadow-2xl animate-fade-up" 
-                                    style={{ animationFillMode: 'both', animationDelay: `${idx * 150}ms` }}
+                                    className="bg-card/90 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex items-center gap-4 shadow-xl animate-fade-up min-w-[200px]" 
+                                    style={{ animationFillMode: 'both', animationDelay: `${idx * 150}ms`, transform: `translateY(${idx % 2 === 0 ? '-10px' : '10px'})` }}
                                  >
-                                    <img src={`https://i.pravatar.cc/100?img=${num}`} className="w-12 h-12 rounded-full border border-primary/30" alt="Worker"/>
-                                    <div className="flex flex-col gap-1.5 w-24">
-                                       <div className="h-3 w-20 bg-muted-foreground/30 rounded"></div>
+                                    <div className="relative">
+                                       <img src={`https://i.pravatar.cc/100?img=${num}`} className="w-12 h-12 rounded-full border border-primary/30" alt="Worker"/>
+                                       <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-success rounded-full border-2 border-background"></div>
+                                    </div>
+                                    <div className="flex flex-col gap-1.5 w-20">
+                                       <div className="h-3 w-full bg-muted-foreground/30 rounded"></div>
                                        <div className="h-2 w-12 bg-primary/40 rounded"></div>
                                     </div>
-                                    <div className="ml-2 px-2 py-1 bg-success/15 text-success rounded border border-success/20 text-xs font-bold leading-none">98%</div>
+                                    <div className="ml-2 px-2 py-1 bg-success/15 text-success rounded border border-success/20 text-[10px] font-bold leading-none">98%</div>
                                  </div>
                               ))}
                            </>
@@ -162,17 +194,17 @@ export function InteractiveDemo() {
                               {[1, 2, 3].map((num, idx) => (
                                  <div 
                                     key={num} 
-                                    className="bg-card/90 backdrop-blur-md border border-white/10 p-5 rounded-2xl flex flex-col gap-4 shadow-2xl animate-fade-up min-w-[220px]" 
-                                    style={{ animationFillMode: 'both', animationDelay: `${idx * 150}ms` }}
+                                    className="bg-card/90 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex flex-col gap-4 shadow-xl animate-fade-up w-[200px]" 
+                                    style={{ animationFillMode: 'both', animationDelay: `${idx * 150}ms`, transform: `translateY(${idx % 2 === 0 ? '5px' : '-15px'})` }}
                                  >
                                     <div className="flex justify-between items-start">
-                                       <div className="p-3 bg-primary/10 rounded-xl border border-primary/20">
-                                          <Briefcase size={20} className="text-primary" />
+                                       <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20">
+                                          <Briefcase size={18} className="text-primary" />
                                        </div>
-                                       <div className="text-success font-bold">₹{Math.floor(Math.random() * 4 + 5) * 100}</div>
+                                       <div className="text-success font-bold text-sm">₹{Math.floor(Math.random() * 4 + 5) * 100}</div>
                                     </div>
-                                    <div className="flex flex-col gap-2">
-                                       <div className="h-3 w-24 bg-muted-foreground/30 rounded"></div>
+                                    <div className="flex flex-col gap-1.5">
+                                       <div className="h-3 w-11/12 bg-muted-foreground/30 rounded"></div>
                                        <div className="h-2 w-16 bg-muted-foreground/20 rounded"></div>
                                     </div>
                                  </div>
