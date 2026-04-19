@@ -10,6 +10,7 @@ import { ForEmployers } from "@/components/landing/ForEmployers";
 import { Pricing } from "@/components/landing/Pricing";
 import { CTASection } from "@/components/landing/CTASection";
 import { Footer } from "@/components/landing/Footer";
+import { InteractiveDemo } from "@/components/landing/InteractiveDemo";
 
 const Index = () => {
   return (
@@ -17,6 +18,7 @@ const Index = () => {
       <Header />
       <main>
         <Hero />
+        <InteractiveDemo />
         <TripleGuarantee />
         <HowItWorks />
         <MarketProof />
