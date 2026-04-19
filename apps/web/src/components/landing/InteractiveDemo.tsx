@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   Search, MapPin, Briefcase, Users, ArrowRight,
   Loader2, CheckCircle2, Sparkles, Star, Clock, Shield,
@@ -63,39 +63,47 @@ const ALL_CATEGORIES = [
   { label: "Tailoring & Alterations", emoji: "🧵" },
 ];
 
-const ALL_CITIES = [
-  "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Chennai", "Kolkata",
-  "Pune", "Ahmedabad", "Jaipur", "Surat", "Lucknow", "Kanpur", "Nagpur",
-  "Indore", "Thane", "Bhopal", "Visakhapatnam", "Pimpri-Chinchwad", "Patna",
-  "Vadodara", "Gurgaon", "Ghaziabad", "Ludhiana", "Agra", "Nashik",
-  "Faridabad", "Meerut", "Rajkot", "Kalyan", "Vasai-Virar",
-  "Navi Mumbai", "Noida", "Coimbatore", "Kochi", "Chandigarh",
-];
+// ─── Nominatim location type ───────────────────────────────────────────────────
+interface LocationResult {
+  display_name: string;
+  city: string;
+  state: string;
+}
 
-// Generate city + state code display strings
-const CITY_STATE: Record<string, string> = {
-  "Mumbai": "MH", "Delhi": "DL", "Bangalore": "KA", "Hyderabad": "TG", "Chennai": "TN",
-  "Kolkata": "WB", "Pune": "MH", "Ahmedabad": "GJ", "Jaipur": "RJ", "Surat": "GJ",
-  "Lucknow": "UP", "Kanpur": "UP", "Nagpur": "MH", "Indore": "MP", "Thane": "MH",
-  "Bhopal": "MP", "Visakhapatnam": "AP", "Pimpri-Chinchwad": "MH", "Patna": "BR",
-  "Vadodara": "GJ", "Gurgaon": "HR", "Ghaziabad": "UP", "Ludhiana": "PB",
-  "Agra": "UP", "Nashik": "MH", "Faridabad": "HR", "Meerut": "UP", "Rajkot": "GJ",
-  "Kalyan": "MH", "Vasai-Virar": "MH", "Navi Mumbai": "MH", "Noida": "UP",
-  "Coimbatore": "TN", "Kochi": "KL", "Chandigarh": "CH",
+// ─── Dynamic results builders (contextual to search keyword) ──────────────────
+const NAMES = [
+  ["Arjun", "M."], ["Priya", "N."], ["Rahul", "S."], ["Divya", "K."],
+  ["Kiran", "R."], ["Suresh", "P."], ["Meena", "B."], ["Vijay", "T."],
+];
+const IMGS = [11, 33, 47, 64, 12, 54, 68, 22];
+
+function buildWorkerProfiles(category: string) {
+  const role = category || "General Work";
+  return NAMES.slice(0, 3).map((n, i) => ({
+    img: IMGS[i],
+    name: `${n[0]} ${n[1]}`,
+    role,
+    rating: parseFloat((4.7 + Math.random() * 0.3).toFixed(1)),
+    gigs: Math.floor(Math.random() * 100) + 30,
+  }));
+}
+
+const PAY_RANGE: Record<string, number> = {
+  plumbing: 900, electrical: 950, carpentry: 800, painting: 750,
+  delivery: 700, driving: 800, security: 650, cleaning: 600,
+  events: 750, hospitality: 800, kitchen: 700, default: 750,
 };
 
-// ─── Simulated worker profiles per mode ───────────────────────────────────────
-const WORKER_PROFILES = [
-  { img: 11, name: "Rahul S.", role: "Event Staff", rating: 4.9, gigs: 84 },
-  { img: 33, name: "Priya N.", role: "Hospitality", rating: 4.8, gigs: 61 },
-  { img: 47, name: "Arjun M.", role: "Chef Assist", rating: 5.0, gigs: 120 },
-];
-
-const GIG_SAMPLES = [
-  { title: "Wedding Event Staff", pay: 800, slots: 5, urgent: true },
-  { title: "Warehouse Loader", pay: 650, slots: 12, urgent: false },
-  { title: "Delivery Partner", pay: 700, slots: 8, urgent: true },
-];
+function buildGigSamples(category: string) {
+  const base = category || "General";
+  const key = Object.keys(PAY_RANGE).find(k => base.toLowerCase().includes(k)) || "default";
+  const basePay = PAY_RANGE[key];
+  return [
+    { title: `${base} - Morning Shift`, pay: basePay, slots: Math.floor(Math.random() * 8) + 3, urgent: true },
+    { title: `${base} - Full Day`, pay: Math.round(basePay * 1.4), slots: Math.floor(Math.random() * 15) + 5, urgent: false },
+    { title: `${base} - Weekend`, pay: Math.round(basePay * 1.2), slots: Math.floor(Math.random() * 6) + 2, urgent: Math.random() > 0.5 },
+  ];
+}
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 export function InteractiveDemo() {
@@ -106,21 +114,58 @@ export function InteractiveDemo() {
   const [catOpen, setCatOpen] = useState(false);
   const [locOpen, setLocOpen] = useState(false);
   const [matchCount] = useState(() => Math.floor(Math.random() * 40) + 18);
+  const [locResults, setLocResults] = useState<LocationResult[]>([]);
+  const [locLoading, setLocLoading] = useState(false);
+  const [searchedCategory, setSearchedCategory] = useState("");
+  const locDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const catRef = useRef<HTMLDivElement>(null);
   const locRef = useRef<HTMLDivElement>(null);
 
-  // Filtered lists
+  // Filtered category list
   const filteredCats = category.length === 0
     ? ALL_CATEGORIES.slice(0, 6)
     : ALL_CATEGORIES.filter(c => c.label.toLowerCase().includes(category.toLowerCase())).slice(0, 6);
 
-  const filteredCities = location.length === 0
-    ? ALL_CITIES.slice(0, 6).map(c => ({ city: c, state: CITY_STATE[c] }))
-    : ALL_CITIES
-        .filter(c => c.toLowerCase().includes(location.toLowerCase()))
-        .slice(0, 6)
-        .map(c => ({ city: c, state: CITY_STATE[c] }));
+  // Nominatim live location search
+  useEffect(() => {
+    if (location.trim().length < 2) { setLocResults([]); return; }
+    if (locDebounce.current) clearTimeout(locDebounce.current);
+    locDebounce.current = setTimeout(async () => {
+      setLocLoading(true);
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}+India&format=json&addressdetails=1&limit=6&featuretype=city`,
+          { headers: { "Accept-Language": "en" } }
+        );
+        const data = await res.json();
+        const mapped: LocationResult[] = data
+          .filter((r: any) => r.address)
+          .map((r: any) => ({
+            display_name: r.display_name,
+            city: r.address.city || r.address.town || r.address.village || r.address.county || r.name,
+            state: r.address.state || "",
+          }))
+          .filter((r: LocationResult) => r.city)
+          .reduce((acc: LocationResult[], cur: LocationResult) => {
+            if (!acc.find(a => a.city === cur.city)) acc.push(cur);
+            return acc;
+          }, []);
+        setLocResults(mapped);
+      } catch { setLocResults([]); }
+      finally { setLocLoading(false); }
+    }, 280);
+    return () => { if (locDebounce.current) clearTimeout(locDebounce.current); };
+  }, [location]);
+
+  // Contextual results derived from the searched category
+  const workerProfiles = useMemo(() => buildWorkerProfiles(searchedCategory), [searchedCategory]);
+  const gigSamples = useMemo(() => buildGigSamples(searchedCategory), [searchedCategory]);
+
+  const displayedLocResults = location.trim().length < 2 ? [] : locResults;
+
+  // filteredCities now points to live Nominatim results
+  const filteredCities = displayedLocResults;
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -142,6 +187,7 @@ export function InteractiveDemo() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!category.trim() || !location.trim()) return;
+    setSearchedCategory(category); // capture for contextual results
     setDemoState("searching");
     setTimeout(() => setDemoState("results"), 1400);
   };
@@ -284,26 +330,35 @@ export function InteractiveDemo() {
                   </div>
 
                   {/* Location Dropdown */}
-                  {locOpen && filteredCities.length > 0 && (
+                  {locOpen && location.trim().length >= 2 && (
                     <div className="absolute top-[calc(100%+8px)] left-0 right-0 z-50 bg-card/98 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
-                      <div className="p-1.5">
-                        {filteredCities.map(({ city, state }) => (
-                          <button
-                            key={city}
-                            type="button"
-                            onMouseDown={() => { setLocation(city); setLocOpen(false); }}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-secondary/60 text-left transition-colors group"
-                          >
-                            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                              <MapPin size={13} className="text-primary" />
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{city}</span>
-                              <span className="text-xs text-muted-foreground ml-2">{state}</span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
+                      {locLoading ? (
+                        <div className="flex items-center gap-3 px-4 py-4 text-sm text-muted-foreground">
+                          <Loader2 size={15} className="animate-spin shrink-0" />
+                          Finding locations in India...
+                        </div>
+                      ) : filteredCities.length > 0 ? (
+                        <div className="p-1.5">
+                          {filteredCities.map(({ city, state }) => (
+                            <button
+                              key={city}
+                              type="button"
+                              onMouseDown={() => { setLocation(city); setLocOpen(false); }}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-secondary/60 text-left transition-colors group"
+                            >
+                              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                <MapPin size={13} className="text-primary" />
+                              </div>
+                              <div>
+                                <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{city}</span>
+                                <span className="text-xs text-muted-foreground ml-2">{state}</span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="px-4 py-4 text-sm text-muted-foreground">No locations found. Try a different name.</div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -394,7 +449,7 @@ export function InteractiveDemo() {
                   {/* Preview cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {mode === "hire"
-                      ? WORKER_PROFILES.map((w, i) => (
+                      ? workerProfiles.map((w, i) => (
                           <div
                             key={w.img}
                             className="relative p-4 rounded-2xl bg-secondary/20 border border-white/8 hover:border-primary/30 transition-all group cursor-default"
@@ -427,7 +482,7 @@ export function InteractiveDemo() {
                             </div>
                           </div>
                         ))
-                      : GIG_SAMPLES.map((g, i) => (
+                      : gigSamples.map((g, i) => (
                           <div
                             key={g.title}
                             className="relative p-4 rounded-2xl bg-secondary/20 border border-white/8 hover:border-primary/30 transition-all cursor-default"
