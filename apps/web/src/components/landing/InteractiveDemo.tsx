@@ -8,18 +8,32 @@ import { cn } from "@/lib/utils";
 type DemoState = "idle" | "searching" | "results";
 type Mode = "hire" | "work";
 
-export function InteractiveDemo() {
-  const [mode, setMode] = useState<Mode>("hire");
-  const [state, setState] = useState<DemoState>("idle");
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
   const [showLocOpts, setShowLocOpts] = useState(false);
   const [showCatOpts, setShowCatOpts] = useState(false);
 
-  const CITIES = ["Mumbai, MH", "Delhi, DL", "Bangalore, KA", "Hyderabad, TG", "Pune, MH", "Gurgaon, HR"];
-  const CATEGORIES = mode === "hire" 
-      ? ["Loading/Unloading", "Warehouse Worker", "Event Hospitality", "General Helper", "Plumber"]
-      : ["Barista", "Delivery Partner", "Brand Promoter", "Retail Staff", "Electrician"];
+  // Full HZLR datasets for seamless autofill
+  const ALL_LOCATIONS = [
+    "Mumbai, MH", "Delhi, DL", "Bangalore, KA", "Hyderabad, TG", "Chennai, TN", "Kolkata, WB",
+    "Pune, MH", "Ahmedabad, GJ", "Jaipur, RJ", "Surat, GJ", "Lucknow, UP", "Kanpur, UP",
+    "Nagpur, MH", "Indore, MP", "Thane, MH", "Bhopal, MP", "Visakhapatnam, AP", "Pimpri-Chinchwad, MH",
+    "Patna, BR", "Vadodara, GJ"
+  ];
+  
+  const ALL_CATEGORIES = [
+    "Food & Beverage", "Events & Hospitality", "Kitchen & Cooking", "Catering & Food Prep", "Bartending",
+    "Cleaning & Housekeeping", "Elder Care", "Pet Care", "Gardening & Landscaping",
+    "Plumbing", "Electrical", "Carpentry & Woodwork", "Painting & Decorating",
+    "Construction & Labour", "AC & Appliance Repair", "Warehouse & Logistics", "Delivery & Courier",
+    "Driving & Chauffeur", "Security & Guard", "Beauty & Grooming", "Fitness & Personal Training",
+    "Healthcare & Nursing", "Photography & Videography", "Graphic Design", "Content Writing", "DJ & Entertainment",
+    "Event Decoration", "Data Entry & Admin", "Customer Support", "Sales & Promotions", "IT & Tech Support",
+    "Accounting & Finance"
+  ];
+
+  const filteredCategories = ALL_CATEGORIES.filter(c => c.toLowerCase().includes(category.toLowerCase())).slice(0, 5);
+  const filteredLocs = ALL_LOCATIONS.filter(c => c.toLowerCase().includes(location.toLowerCase())).slice(0, 5);
 
   // Simulated metrics based on mode
   const metrics = mode === "hire" 
@@ -101,9 +115,9 @@ export function InteractiveDemo() {
                    className="pl-12 h-14 bg-background/50 border-white/10 text-lg focus-visible:ring-primary rounded-xl"
                    required
                  />
-                 {showCatOpts && (
+                 {showCatOpts && filteredCategories.length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-2 bg-card/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden text-left p-1 animate-in fade-in slide-in-from-top-2">
-                       {CATEGORIES.filter(c => c.toLowerCase().includes(category.toLowerCase())).slice(0, 4).map(c => (
+                       {filteredCategories.map(c => (
                           <button key={c} type="button" onMouseDown={() => setCategory(c)} className="w-full text-left px-4 py-3 rounded-lg hover:bg-secondary/50 text-sm font-medium transition-colors">
                              {c}
                           </button>
@@ -118,13 +132,13 @@ export function InteractiveDemo() {
                    onChange={(e) => { setLocation(e.target.value); setShowLocOpts(true); }}
                    onFocus={() => setShowLocOpts(true)}
                    onBlur={() => setTimeout(() => setShowLocOpts(false), 200)}
-                   placeholder="Enter city or ZIP"
+                   placeholder="Enter city, state or ZIP"
                    className="pl-12 h-14 bg-background/50 border-white/10 text-lg focus-visible:ring-primary rounded-xl"
                    required
                  />
-                 {showLocOpts && (
+                 {showLocOpts && filteredLocs.length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-2 bg-card/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden text-left p-1 animate-in fade-in slide-in-from-top-2">
-                       {CITIES.filter(c => c.toLowerCase().includes(location.toLowerCase())).slice(0, 4).map(c => (
+                       {filteredLocs.map(c => (
                           <button key={c} type="button" onMouseDown={() => setLocation(c)} className="w-full text-left px-4 py-3 rounded-lg hover:bg-secondary/50 text-sm font-medium transition-colors">
                              <MapPin size={14} className="inline mr-2 text-muted-foreground" /> {c}
                           </button>
