@@ -1,6 +1,6 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "cd apps/api && npm install --include=dev && npx prisma generate && npm run build"
+buildCommand = "cd apps/api && npm install --include=dev && npx prisma generate && npm run build && npx ts-node --project tsconfig.json prisma/seed-store-categories.ts"
 
 [deploy]
 startCommand = "cd apps/api && npm start"
