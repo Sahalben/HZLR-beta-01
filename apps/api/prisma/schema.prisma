@@ -111,6 +111,10 @@ model User {
   notifications     Notification[]
   refreshTokens     RefreshToken[]
   sosAlerts         SosAlert[]
+  // HZLR.store
+  merchantProfile   MerchantProfile?
+  cart              Cart?
+  storeOrders       StoreOrder[]
 }
 
 model WorkerProfile {
@@ -157,6 +161,9 @@ model WorkerProfile {
   givenRatings      Rating[]           @relation("WorkerGivenRatings")
   attendance        Attendance[]
   disputes          Dispute[]          @relation("WorkerDisputes")
+  // HZLR.store
+  isDeliveryPartner   Boolean            @default(false)
+  deliveryPartnerMode DeliveryPartnerMode?
 }
 
 model EmployerProfile {
@@ -470,4 +477,322 @@ model RefreshToken {
   token             String             @unique
   expiresAt         DateTime
   createdAt         DateTime           @default(now())
+}
+
+// ─── HZLR.STORE ENUMS ────────────────────────────
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAYMENT_FAILED
+  CONFIRMED
+  PREPARING
+  READY_FOR_PICKUP
+  ASSIGNED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum StorePaymentMethod {
+  RAZORPAY
+  COD
+}
+
+enum DispatchStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  COMPLETED
+}
+
+enum MerchantStatus {
+  PENDING_APPROVAL
+  APPROVED
+  SUSPENDED
+}
+
+// ─── HZLR.STORE — MERCHANT ───────────────────────
+
+model MerchantProfile {
+  id                   String          @id @default(cuid())
+  userId               String          @unique
+  user                 User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeName            String
+  storeType            String          // supermarket | kirana | pharmacy | bakery | restaurant
+  tagline              String?
+  logoUrl              String?
+  description          String?
+  // Location
+  address              String
+  city                 String
+  state                String
+  pincode              String?
+  latitude             Float
+  longitude            Float
+  // Hours: JSON array of { day: "Mon", open: "08:00", close: "22:00", closed: false }
+  operatingHours       Json?
+  // Delivery config
+  minOrderValue        Float           @default(0)
+  maxDeliveryRadiusKm  Float           @default(5)
+  freeDeliveryThreshold Float?
+  // POS integration
+  posType              String?         // petpooja | gofrugal | csv | none
+  posMerchantId        String?
+  posWebhookSecret     String?
+  // Approval
+  status               MerchantStatus  @default(PENDING_APPROVAL)
+  approvedAt           DateTime?
+  approvedBy           String?
+  suspendedAt          DateTime?
+  suspendReason        String?
+  // Payout
+  upiId                String?
+  // Ratings
+  avgRating            Float           @default(0)
+  totalRatings         Int             @default(0)
+  totalOrders          Int             @default(0)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  products             Product[]
+  orders               StoreOrder[]
+  posSync              PosSync[]
+  settlements          Settlement[]
+  subscription         MerchantSubscription?
+}
+
+// ─── HZLR.STORE — CATALOG ────────────────────────
+
+model ProductCategory {
+  id          String            @id @default(cuid())
+  name        String            @unique
+  slug        String            @unique
+  iconEmoji   String?
+  parentId    String?
+  parent      ProductCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children    ProductCategory[] @relation("CategoryTree")
+  sortOrder   Int               @default(0)
+  createdAt   DateTime          @default(now())
+
+  products    Product[]
+}
+
+model Product {
+  id               String          @id @default(cuid())
+  merchantId       String
+  merchant         MerchantProfile @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  categoryId       String?
+  category         ProductCategory? @relation(fields: [categoryId], references: [id])
+  name             String
+  description      String?
+  imageUrl         String?
+  price            Float
+  mrp              Float?
+  unit             String          @default("piece") // piece | kg | litre | pack | dozen
+  stock            Int             @default(0)
+  lowStockThreshold Int            @default(5)
+  isActive         Boolean         @default(true)
+  sku              String?
+  barcode          String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  cartItems        CartItem[]
+  orderItems       StoreOrderItem[]
+}
+
+model PosSync {
+  id            String          @id @default(cuid())
+  merchantId    String
+  merchant      MerchantProfile @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  posType       String
+  itemsUpdated  Int             @default(0)
+  status        String          @default("success") // success | failed | partial
+  errorMessage  String?
+  syncedAt      DateTime        @default(now())
+}
+
+// ─── HZLR.STORE — CART ───────────────────────────
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  items     CartItem[]
+}
+
+model CartItem {
+  id          String   @id @default(cuid())
+  cartId      String
+  cart        Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  quantity    Int      @default(1)
+  priceAtAdd  Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([cartId, productId])
+}
+
+// ─── HZLR.STORE — ORDERS ─────────────────────────
+
+model StoreOrder {
+  id                String             @id @default(cuid())
+  userId            String
+  user              User               @relation(fields: [userId], references: [id])
+  merchantId        String
+  merchant          MerchantProfile    @relation(fields: [merchantId], references: [id])
+  status            OrderStatus        @default(PENDING_PAYMENT)
+  paymentMethod     StorePaymentMethod
+  // Financials (snapshot at order time)
+  subtotal          Float
+  deliveryFee       Float
+  totalAmount       Float
+  // Delivery address (snapshot)
+  deliveryAddress   String
+  deliveryLat       Float?
+  deliveryLng       Float?
+  // Razorpay
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  // Timestamps
+  confirmedAt       DateTime?
+  preparedAt        DateTime?
+  readyAt           DateTime?
+  assignedAt        DateTime?
+  deliveredAt       DateTime?
+  cancelledAt       DateTime?
+  cancelReason      String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  items             StoreOrderItem[]
+  assignment        DeliveryAssignment?
+  settlement        Settlement?        @relation(fields: [settlementId], references: [id])
+  settlementId      String?
+}
+
+model StoreOrderItem {
+  id          String     @id @default(cuid())
+  orderId     String
+  order       StoreOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product    @relation(fields: [productId], references: [id])
+  productName String     // snapshot — immutable
+  quantity    Int
+  unitPrice   Float      // price at order time — immutable
+  totalPrice  Float
+  createdAt   DateTime   @default(now())
+}
+
+// ─── HZLR.STORE — DELIVERY ───────────────────────
+
+model DeliveryPartnerMode {
+  id            String        @id @default(cuid())
+  workerProfileId String      @unique
+  workerProfile WorkerProfile @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
+  isOnline      Boolean       @default(false)
+  vehicleType   String        @default("two-wheeler") // bicycle | two-wheeler | three-wheeler
+  currentLat    Float?
+  currentLng    Float?
+  lastSeenAt    DateTime?
+  totalDeliveries Int         @default(0)
+  totalEarned   Float         @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  assignments   DeliveryAssignment[]
+  subscription  DeliverySubPayment?
+}
+
+model DeliveryAssignment {
+  id                  String              @id @default(cuid())
+  orderId             String              @unique
+  order               StoreOrder          @relation(fields: [orderId], references: [id])
+  deliveryPartnerId   String
+  deliveryPartner     DeliveryPartnerMode @relation(fields: [deliveryPartnerId], references: [id])
+  status              DispatchStatus      @default(PENDING)
+  distanceKm          Float?
+  baseEarning         Float?
+  sizeBonus           Float?
+  totalEarning        Float?
+  pushedAt            DateTime            @default(now())
+  acceptedAt          DateTime?
+  pickedUpAt          DateTime?
+  deliveredAt         DateTime?
+  declinedAt          DateTime?
+  declineReason       String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+}
+
+// ─── HZLR.STORE — SETTLEMENTS ────────────────────
+
+model Settlement {
+  id           String          @id @default(cuid())
+  merchantId   String
+  merchant     MerchantProfile @relation(fields: [merchantId], references: [id])
+  periodStart  DateTime
+  periodEnd    DateTime
+  totalOrders  Int             @default(0)
+  grossRevenue Float           @default(0)
+  platformFee  Float           @default(0)
+  netPayout    Float           @default(0)
+  status       String          @default("PENDING") // PENDING | PROCESSING | PROCESSED | FAILED
+  processedAt  DateTime?
+  failureReason String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  orders       StoreOrder[]
+}
+
+// ─── HZLR.STORE — CONFIG ─────────────────────────
+
+model DeliveryFeeConfig {
+  id           String   @id @default(cuid())
+  baseFee      Float    @default(20)
+  ratePerKm    Float    @default(6)
+  // JSON: [{ min_order: 0, max_order: 300, bonus: 0 }, ...]
+  sizeBrackets Json
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ─── HZLR.STORE — SUBSCRIPTIONS ──────────────────
+
+model MerchantSubscription {
+  id          String             @id @default(cuid())
+  merchantId  String             @unique
+  merchant    MerchantProfile    @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  planName    String             @default("standard") // standard | premium
+  monthlyFee  Float
+  status      SubscriptionStatus @default(ACTIVE)
+  startedAt   DateTime           @default(now())
+  nextDueAt   DateTime?
+  lastPaidAt  DateTime?
+  razorpaySubId String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model DeliverySubPayment {
+  id                  String              @id @default(cuid())
+  deliveryPartnerId   String              @unique
+  deliveryPartner     DeliveryPartnerMode @relation(fields: [deliveryPartnerId], references: [id], onDelete: Cascade)
+  monthlyFee          Float
+  status              SubscriptionStatus  @default(ACTIVE)
+  startedAt           DateTime            @default(now())
+  nextDueAt           DateTime?
+  lastPaidAt          DateTime?
+  razorpaySubId       String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
 }

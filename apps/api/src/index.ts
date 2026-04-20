@@ -22,22 +22,39 @@ app.use(cors({
 app.use(express.json());
 
 const httpServer = createServer(app);
-const io = new Server(httpServer, {
+let io: any;
+
+export function getIO() {
+  if (!io) throw new Error('Socket.io not initialized');
+  return io;
+}
+
+io = new Server(httpServer, {
     cors: {
         origin: '*',
         methods: ['GET', 'POST']
     }
 });
 
-io.on('connection', (socket) => {
+io.on('connection', (socket: any) => {
     console.log('A user connected via socket:', socket.id);
+
+    // Room joins for targeted events
+    socket.on('join:merchant', (merchantId: string) => socket.join(`merchant:${merchantId}`));
+    socket.on('join:delivery', (userId: string) => socket.join(`delivery:${userId}`));
+    socket.on('join:order', (orderId: string) => socket.join(`order:${orderId}`));
+
+    // Delivery partner live location — broadcast to order room for customer tracking
+    socket.on('delivery:location', (data: { orderId: string; lat: number; lng: number }) => {
+        io.to(`order:${data.orderId}`).emit('delivery:location', data);
+    });
 
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
     });
 });
 
-// Routes will go here
+// Routes
 import authRoutes from './routes/auth';
 import jobRoutes from './routes/jobs';
 import applicationRoutes from './routes/applications';
@@ -47,6 +64,7 @@ import messagesRoutes from './routes/messages';
 import attendanceRoutes from './routes/attendance';
 import notificationsRoutes from './routes/notifications';
 import employersRoutes from './routes/employers';
+import storeRouter from './routes/store/index';
 
 const otpSendLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -74,6 +92,7 @@ app.use('/api/v1/messages', messagesRoutes);
 app.use('/api/v1/attendance', attendanceRoutes);
 app.use('/api/v1/notifications', notificationsRoutes);
 app.use('/api/v1/employers', employersRoutes);
+app.use('/api/v1/store', storeRouter);
 
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
