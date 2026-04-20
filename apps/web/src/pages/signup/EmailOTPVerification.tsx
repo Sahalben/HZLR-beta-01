@@ -69,12 +69,8 @@ export default function EmailOTPVerification() {
         description: 'Your email address has been successfully verified.',
       });
       
-      const role = result.user?.role?.toLowerCase();
-      if (role === 'employer') {
-        navigate('/employer/onboarding');
-      } else {
-        navigate('/signup/profile');
-      }
+      // Always route to role selection — role is confirmed there regardless of placeholder set during signup
+      navigate('/signup/role');
     } catch (error: any) {
       setAttempts(prev => prev + 1);
       toast({

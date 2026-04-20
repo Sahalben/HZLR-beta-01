@@ -370,10 +370,14 @@ export default function RoleSelection() {
     };
   }, []);
 
+  // Only redirect past this screen if the user has explicitly confirmed their role
+  // (not just because signup set a placeholder role)
   React.useEffect(() => {
-    if (profile?.role) {
-      if (profile.role === 'employer') {
-        navigate('/employer/onboarding', { replace: true });
+    const state = profile?.onboarding_state;
+    if (!state) return;
+    if (state === 'PROFILE_DATA_COLLECTED' || state === 'E_KYC_PENDING' || state === 'E_KYC_VERIFIED' || state === 'ONBOARDING_COMPLETE') {
+      if (profile?.role === 'employer') {
+        navigate('/employer/home', { replace: true });
       } else {
         navigate('/signup/profile', { replace: true });
       }
