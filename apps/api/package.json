@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "build": "npx prisma generate && tsc",
-    "start": "npx prisma db push --accept-data-loss && npx ts-node --project tsconfig.json prisma/seed-store-categories.ts && node dist/index.js",
+    "start": "npx prisma db push --accept-data-loss && node dist/index.js",
     "test": "jest",
     "test:watch": "jest --watch"
   },
