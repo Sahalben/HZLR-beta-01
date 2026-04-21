@@ -59,6 +59,9 @@ import MerchantOnboarding from "./pages/merchant/MerchantOnboarding";
 import ApprovalPending from "./pages/merchant/ApprovalPending";
 import MerchantDashboard from "./pages/merchant/MerchantDashboard";
 import CatalogManager from "./pages/merchant/CatalogManager";
+import MerchantOrders from "./pages/merchant/MerchantOrders";
+import MerchantSettlements from "./pages/merchant/MerchantSettlements";
+import MerchantSettings from "./pages/merchant/MerchantSettings";
 
 // ─── HZLR.store — Delivery Partner ───────────────
 import DeliveryOptIn from "./pages/worker/DeliveryOptIn";
@@ -139,6 +142,9 @@ const App = () => (
             <Route path="/merchant/pending" element={<ApprovalPending />} />
             <Route path="/merchant/dashboard" element={<MerchantDashboard />} />
             <Route path="/merchant/catalog" element={<CatalogManager />} />
+            <Route path="/merchant/orders" element={<MerchantOrders />} />
+            <Route path="/merchant/settlements" element={<MerchantSettlements />} />
+            <Route path="/merchant/settings" element={<MerchantSettings />} />
 
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
