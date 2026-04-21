@@ -162,4 +162,81 @@ router.post('/bulk-import', authenticateToken, upload.single('file'), async (req
   }
 });
 
+// Haversine distance in km
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// GET /store/products/nearby?lat=&lng=&radius=&categoryId=&search=
+router.get('/nearby', async (req, res) => {
+  try {
+    const { lat, lng, radius, categoryId, search } = req.query;
+    const userLat = parseFloat(lat as string);
+    const userLng = parseFloat(lng as string);
+    const radiusKm = parseFloat(radius as string) || 15;
+
+    if (isNaN(userLat) || isNaN(userLng)) {
+      return res.status(400).json({ error: 'lat and lng are required.' });
+    }
+
+    // 1. Find approved merchants nearby
+    const merchants = await prisma.merchantProfile.findMany({
+      where: { status: 'APPROVED' },
+    });
+
+    const nearbyMerchants = merchants
+      .map((m) => ({
+        ...m,
+        distanceKm: haversineKm(userLat, userLng, m.latitude, m.longitude),
+      }))
+      .filter((m) => m.distanceKm <= radiusKm && m.distanceKm <= m.maxDeliveryRadiusKm);
+
+    if (nearbyMerchants.length === 0) {
+       return res.json([]); 
+    }
+
+    const merchantIds = nearbyMerchants.map(m => m.id);
+
+    // 2. Query products for these merchants
+    const where: any = { merchantId: { in: merchantIds }, isActive: true, stock: { gt: 0 } };
+    if (categoryId) where.categoryId = categoryId as string;
+    if (search) where.name = { contains: search as string, mode: 'insensitive' };
+
+    const products = await prisma.product.findMany({
+      where,
+      include: { 
+         category: true,
+         merchant: {
+            select: { id: true, storeName: true } 
+         } 
+      },
+      take: 100 // limit to top 100 for performance
+    });
+
+    // 3. Patch merchant distance onto products and return
+    const formattedProducts = products.map(p => {
+       const m = nearbyMerchants.find(nm => nm.id === p.merchantId);
+       return {
+          ...p,
+          merchant: {
+             ...p.merchant,
+             distanceKm: m?.distanceKm || 0
+          }
+       };
+    });
+
+    res.json(formattedProducts);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 export default router;

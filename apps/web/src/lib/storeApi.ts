@@ -36,6 +36,11 @@ export const storeApi = {
     const q = new URLSearchParams({ merchantId, ...params }).toString();
     return req<any[]>('GET', `/products?${q}`);
   },
+  getNearbyProducts: (lat: number, lng: number, radius = 15, categoryId?: string) => {
+    let url = `/products/nearby?lat=${lat}&lng=${lng}&radius=${radius}`;
+    if (categoryId) url += `&categoryId=${categoryId}`;
+    return req<any[]>('GET', url);
+  },
   addProduct: (data: any) => req<any>('POST', '/products', data),
   updateProduct: (id: string, data: any) => req<any>('PATCH', `/products/${id}`, data),
   deleteProduct: (id: string) => req<any>('DELETE', `/products/${id}`),

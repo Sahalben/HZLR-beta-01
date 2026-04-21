@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { LocationProvider } from "@/contexts/LocationContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -75,81 +76,83 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+        <LocationProvider>
+          <AuthProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
 
-            {/* Onboarding Routes */}
-            <Route path="/signup/otp" element={<OTPVerification />} />
-            <Route path="/signup/verify-email" element={<EmailOTPVerification />} />
-            <Route path="/signup/role" element={<RoleSelection />} />
-            <Route path="/signup/profile" element={<ProfileSetup />} />
-            <Route path="/signup/kyc" element={<KYCVerification />} />
-            <Route path="/signup/complete" element={<OnboardingComplete />} />
+              {/* Onboarding Routes */}
+              <Route path="/signup/otp" element={<OTPVerification />} />
+              <Route path="/signup/verify-email" element={<EmailOTPVerification />} />
+              <Route path="/signup/role" element={<RoleSelection />} />
+              <Route path="/signup/profile" element={<ProfileSetup />} />
+              <Route path="/signup/kyc" element={<KYCVerification />} />
+              <Route path="/signup/complete" element={<OnboardingComplete />} />
 
-            {/* Worker Routes */}
-            <Route path="/worker" element={<Navigate to="/worker/home" replace />} />
-            <Route path="/worker/home" element={<WorkerHome />} />
-            <Route path="/worker/search" element={<WorkerSearch />} />
-            <Route path="/worker/gigs" element={<WorkerSearch />} />
-            <Route path="/worker/messages" element={<WorkerMessages />} />
-            <Route path="/worker/profile" element={<WorkerProfile />} />
-            <Route path="/worker/queue-status" element={<WorkerQueueStatus />} />
-            <Route path="/worker/checkin" element={<WorkerCheckIn />} />
-            <Route path="/worker/ticket" element={<WorkerTicket />} />
-            <Route path="/worker/notifications" element={<WorkerNotifications />} />
-            <Route path="/worker/my-gigs" element={<WorkerMyGigs />} />
-            <Route path="/worker/attendance" element={<WorkerAttendance />} />
-            <Route path="/worker/classified-ads" element={<ClassifiedAds />} />
-            <Route path="/worker/long-term-jobs" element={<LongTermJobs />} />
-            <Route path="/worker/wallet" element={<WorkerWallet />} />
-            <Route path="/worker/signup" element={<Navigate to="/signup" replace />} />
+              {/* Worker Routes */}
+              <Route path="/worker" element={<Navigate to="/worker/home" replace />} />
+              <Route path="/worker/home" element={<WorkerHome />} />
+              <Route path="/worker/search" element={<WorkerSearch />} />
+              <Route path="/worker/gigs" element={<WorkerSearch />} />
+              <Route path="/worker/messages" element={<WorkerMessages />} />
+              <Route path="/worker/profile" element={<WorkerProfile />} />
+              <Route path="/worker/queue-status" element={<WorkerQueueStatus />} />
+              <Route path="/worker/checkin" element={<WorkerCheckIn />} />
+              <Route path="/worker/ticket" element={<WorkerTicket />} />
+              <Route path="/worker/notifications" element={<WorkerNotifications />} />
+              <Route path="/worker/my-gigs" element={<WorkerMyGigs />} />
+              <Route path="/worker/attendance" element={<WorkerAttendance />} />
+              <Route path="/worker/classified-ads" element={<ClassifiedAds />} />
+              <Route path="/worker/long-term-jobs" element={<LongTermJobs />} />
+              <Route path="/worker/wallet" element={<WorkerWallet />} />
+              <Route path="/worker/signup" element={<Navigate to="/signup" replace />} />
 
-            {/* Delivery Partner Routes */}
-            <Route path="/worker/delivery" element={<DeliveryOptIn />} />
-            <Route path="/worker/delivery/live" element={<DeliveryLive />} />
+              {/* Delivery Partner Routes */}
+              <Route path="/worker/delivery" element={<DeliveryOptIn />} />
+              <Route path="/worker/delivery/live" element={<DeliveryLive />} />
 
-            {/* Employer Routes */}
-            <Route path="/employer" element={<Navigate to="/employer/home" replace />} />
-            <Route path="/employer/onboarding" element={<EmployerOnboarding />} />
-            <Route path="/employer/home" element={<EmployerHome />} />
-            <Route path="/employer/post" element={<PostJob />} />
-            <Route path="/employer/postings" element={<EmployerPostings />} />
-            <Route path="/employer/postings/:id" element={<JobManage />} />
-            <Route path="/employer/applicants" element={<EmployerPostings />} />
-            <Route path="/employer/applicants/:id" element={<ApplicantDetail />} />
-            <Route path="/employer/messages" element={<EmployerMessages />} />
-            <Route path="/employer/invoices" element={<EmployerInvoices />} />
-            <Route path="/employer/notifications" element={<EmployerNotifications />} />
-            <Route path="/employer/attendance" element={<EmployerAttendance />} />
-            <Route path="/employer/employees" element={<Employees />} />
-            <Route path="/employer/employees/:workerId" element={<EmployeeDetail />} />
-            <Route path="/employer/profile" element={<EmployerProfile />} />
-            <Route path="/employer/signup" element={<Navigate to="/signup" replace />} />
+              {/* Employer Routes */}
+              <Route path="/employer" element={<Navigate to="/employer/home" replace />} />
+              <Route path="/employer/onboarding" element={<EmployerOnboarding />} />
+              <Route path="/employer/home" element={<EmployerHome />} />
+              <Route path="/employer/post" element={<PostJob />} />
+              <Route path="/employer/postings" element={<EmployerPostings />} />
+              <Route path="/employer/postings/:id" element={<JobManage />} />
+              <Route path="/employer/applicants" element={<EmployerPostings />} />
+              <Route path="/employer/applicants/:id" element={<ApplicantDetail />} />
+              <Route path="/employer/messages" element={<EmployerMessages />} />
+              <Route path="/employer/invoices" element={<EmployerInvoices />} />
+              <Route path="/employer/notifications" element={<EmployerNotifications />} />
+              <Route path="/employer/attendance" element={<EmployerAttendance />} />
+              <Route path="/employer/employees" element={<Employees />} />
+              <Route path="/employer/employees/:workerId" element={<EmployeeDetail />} />
+              <Route path="/employer/profile" element={<EmployerProfile />} />
+              <Route path="/employer/signup" element={<Navigate to="/signup" replace />} />
 
-            {/* ─── HZLR.store — Customer ──────────────────── */}
-            <Route path="/store" element={<StoreHome />} />
-            <Route path="/store/merchant/:id" element={<MerchantStorefront />} />
-            <Route path="/store/cart" element={<Cart />} />
-            <Route path="/store/orders" element={<CustomerOrders />} />
-            <Route path="/store/orders/:id" element={<OrderTracking />} />
+              {/* ─── HZLR.store — Customer ──────────────────── */}
+              <Route path="/store" element={<StoreHome />} />
+              <Route path="/store/merchant/:id" element={<MerchantStorefront />} />
+              <Route path="/store/cart" element={<Cart />} />
+              <Route path="/store/orders" element={<CustomerOrders />} />
+              <Route path="/store/orders/:id" element={<OrderTracking />} />
 
-            {/* ─── HZLR.store — Merchant Portal ───────────── */}
-            <Route path="/merchant" element={<Navigate to="/merchant/dashboard" replace />} />
-            <Route path="/merchant/onboard" element={<MerchantOnboarding />} />
-            <Route path="/merchant/pending" element={<ApprovalPending />} />
-            <Route path="/merchant/dashboard" element={<MerchantDashboard />} />
-            <Route path="/merchant/catalog" element={<CatalogManager />} />
-            <Route path="/merchant/orders" element={<MerchantOrders />} />
-            <Route path="/merchant/settlements" element={<MerchantSettlements />} />
-            <Route path="/merchant/settings" element={<MerchantSettings />} />
+              {/* ─── HZLR.store — Merchant Portal ───────────── */}
+              <Route path="/merchant" element={<Navigate to="/merchant/dashboard" replace />} />
+              <Route path="/merchant/onboard" element={<MerchantOnboarding />} />
+              <Route path="/merchant/pending" element={<ApprovalPending />} />
+              <Route path="/merchant/dashboard" element={<MerchantDashboard />} />
+              <Route path="/merchant/catalog" element={<CatalogManager />} />
+              <Route path="/merchant/orders" element={<MerchantOrders />} />
+              <Route path="/merchant/settlements" element={<MerchantSettlements />} />
+              <Route path="/merchant/settings" element={<MerchantSettings />} />
 
-            {/* Catch-all */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
+              {/* Catch-all */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </LocationProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
