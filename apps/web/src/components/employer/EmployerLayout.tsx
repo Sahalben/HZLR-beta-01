@@ -2,8 +2,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, Plus, Users, MessageSquare, FileText, Bell, UserCheck, ClipboardCheck, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { AppShell } from "@/components/layout/AppShell";
 import { useAuth } from "@/contexts/AuthContext";
-
 interface EmployerLayoutProps {
   children: React.ReactNode;
   title?: string;
@@ -27,6 +27,7 @@ export function EmployerLayout({ children, title, companyName = "HZLR Business" 
   ];
 
   return (
+    <AppShell>
     <div className="min-h-screen bg-background">
       {/* Desktop Navigation */}
       <header className="bg-primary text-primary-foreground px-6 py-4">
@@ -120,5 +121,6 @@ export function EmployerLayout({ children, title, companyName = "HZLR Business" 
         </button>
       </nav>
     </div>
+    </AppShell>
   );
 }

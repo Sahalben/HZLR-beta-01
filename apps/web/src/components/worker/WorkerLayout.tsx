@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, Search, MessageSquare, User, Bell, ClipboardCheck, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
+import { AppShell } from "@/components/layout/AppShell";
 
 interface WorkerLayoutProps {
   children: React.ReactNode;
@@ -25,9 +25,10 @@ export function WorkerLayout({ children, title, showHeader = true }: WorkerLayou
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {showHeader && (
-        <header className="bg-primary text-primary-foreground px-4 pt-8 pb-4 flex items-center justify-between">
+    <AppShell>
+      <div className="min-h-screen bg-background pb-20">
+        {showHeader && (
+          <header className="bg-primary text-primary-foreground px-4 pt-8 pb-4 flex items-center justify-between">
           <Link to="/worker/home" className="text-xl font-black tracking-tight">
             HZLR<span className="text-seafoam">.</span>
           </Link>
@@ -68,5 +69,6 @@ export function WorkerLayout({ children, title, showHeader = true }: WorkerLayou
         })}
       </nav>
     </div>
+    </AppShell>
   );
 }
