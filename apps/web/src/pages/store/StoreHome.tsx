@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MapPin, Search, ChevronRight, Star, Clock, ShoppingBag, Zap } from 'lucide-react';
+import { MapPin, Search, Star, Clock, ShoppingBag, Zap, ChevronDown } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AppShell } from '@/components/layout/AppShell';
 import { storeApi } from '@/lib/storeApi';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function StoreHome() {
   const { user } = useAuth();
@@ -26,7 +27,6 @@ export default function StoreHome() {
         async (pos) => {
           const { latitude: lat, longitude: lng } = pos.coords;
           setUserLocation({ lat, lng });
-          // Reverse geocode with Nominatim
           try {
             const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
             const d = await r.json();
@@ -37,7 +37,7 @@ export default function StoreHome() {
           loadMerchants(lat, lng);
         },
         () => {
-          setLocationName('Enable location for nearby stores');
+          setLocationName('Enable location for stores');
           setLoading(false);
         }
       );
@@ -59,7 +59,8 @@ export default function StoreHome() {
   }, []);
 
   const filtered = merchants.filter(m =>
-    !searchQuery || m.storeName.toLowerCase().includes(searchQuery.toLowerCase()) || m.storeType.includes(searchQuery.toLowerCase())
+    (!searchQuery || m.storeName.toLowerCase().includes(searchQuery.toLowerCase()) || m.storeType.includes(searchQuery.toLowerCase())) &&
+    (!activeCategory || activeCategory === m.storeType) // Fallback as we don't have per-store category mappings easily yet
   );
 
   const storeTypeEmoji: Record<string, string> = {
@@ -68,163 +69,178 @@ export default function StoreHome() {
 
   return (
     <AppShell>
-      <div className="min-h-screen bg-background pb-20">
-        {/* Store Header */}
-        <div className="bg-amber-500 text-white px-4 pt-10 pb-16 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-4 right-4 w-32 h-32 rounded-full bg-white/20" />
-            <div className="absolute bottom-0 left-0 w-48 h-24 rounded-full bg-white/10" />
-          </div>
-          <div className="relative">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-amber-100 text-xs font-bold tracking-wider uppercase">HZLR.store</p>
-                <h1 className="text-2xl font-black mt-0.5">Deliver in Minutes</h1>
-              </div>
-              <div className="bg-white/20 rounded-xl p-2 backdrop-blur-sm">
-                <Zap size={24} className="text-white" />
-              </div>
-            </div>
-
-            {/* Location bar */}
-            <button
-              className="flex items-center gap-2 bg-white/20 rounded-xl px-3 py-2.5 backdrop-blur-sm w-full text-left"
-              onClick={() => void 0}
-            >
-              <MapPin size={16} className="text-amber-100 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[10px] uppercase font-bold text-amber-100 tracking-wider">Delivering to</p>
-                <p className="text-sm font-bold truncate">{locationName}</p>
-              </div>
-              <ChevronRight size={16} className="ml-auto text-amber-200" />
+      <div className="min-h-screen bg-slate-50 pb-20">
+        
+        {/* Dynamic Header & Location Sticky Strip */}
+        <div className="sticky top-[58px] z-40 bg-white shadow-sm px-4 py-3 flex items-center justify-between">
+            <button className="flex items-center gap-1.5 max-w-[70%]">
+                <MapPin size={22} className="text-amber-500 shrink-0" fill="currentColor" strokeWidth={1} />
+                <div className="text-left flex flex-col justify-center min-w-0">
+                    <div className="flex items-center gap-1">
+                        <span className="font-black text-sm text-slate-800 tracking-tight truncate">Home</span>
+                        <ChevronDown size={14} className="text-slate-600" />
+                    </div>
+                    <p className="text-[10px] text-slate-500 truncate mt-0.5">{locationName}</p>
+                </div>
             </button>
-          </div>
+            <div className="bg-amber-100 rounded-lg px-2 py-1 flex flex-col items-center justify-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-amber-400 opacity-20 animate-pulse" />
+                <span className="font-black text-amber-700 text-xs">15 MINS</span>
+                <span className="text-[8px] font-black uppercase text-amber-600 tracking-widest">Delivery</span>
+            </div>
         </div>
 
-        <div className="px-4 -mt-8 relative z-10 space-y-5">
-          {/* Search */}
-          <div className="relative shadow-xl shadow-amber-500/10 rounded-2xl overflow-hidden">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <div className="px-4 mt-4 space-y-6">
+          {/* Main Search Input */}
+          <div className="relative shadow-sm rounded-2xl overflow-hidden">
+            <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
-              className="w-full bg-card border-0 rounded-2xl pl-11 pr-4 py-4 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-400/40 placeholder:text-muted-foreground"
-              placeholder="Search stores, products..."
+              className="w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-500 placeholder:text-slate-400 shadow-inner text-slate-800"
+              placeholder="Search 'Milk' or 'Eggs'..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               id="store-search-input"
             />
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-300">
+                | 🎤
+            </div>
           </div>
 
-          {/* Category pills */}
+          {/* Promotional Banners Carousel */}
+          <div className="flex overflow-x-auto gap-4 pb-2 scrollbar-hide -mx-4 px-4">
+              {[
+                { title: 'Essentials', sub: 'Up to 50% OFF', color: 'from-purple-500 to-indigo-600', img: '🍞' },
+                { title: 'Late Night', sub: 'Snacks & Cravings', color: 'from-amber-400 to-orange-500', img: '🍫' },
+                { title: 'Pharmacy', sub: 'Needs within 15 Min', color: 'from-teal-400 to-emerald-500', img: '💊' }
+              ].map((banner, i) => (
+                  <motion.div 
+                     key={i} 
+                     whileTap={{ scale: 0.95 }}
+                     className={`shrink-0 w-64 h-32 rounded-3xl bg-gradient-to-r ${banner.color} p-4 text-white relative overflow-hidden shadow-md`}
+                  >
+                      <div className="absolute -right-4 -bottom-4 text-6xl opacity-70 filter drop-shadow-lg">{banner.img}</div>
+                      <div className="relative z-10 w-2/3">
+                          <p className="text-[10px] font-black uppercase tracking-wider opacity-90">{banner.sub}</p>
+                          <h3 className="font-black text-xl mt-1 leading-tight">{banner.title}</h3>
+                          <button className="mt-3 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold w-fit">Shop Now</button>
+                      </div>
+                  </motion.div>
+              ))}
+          </div>
+
+          {/* Categories Grid (Zepto Style) */}
           {categories.length > 0 && (
             <div>
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                <button
-                  onClick={() => setActiveCategory(null)}
-                  className={cn('shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-all',
-                    !activeCategory ? 'bg-amber-500 text-white shadow-md' : 'bg-muted text-muted-foreground')}
-                >
-                  All
-                </button>
-                {categories.map(cat => (
-                  <button
+              <h2 className="font-black text-sm text-slate-800 uppercase tracking-wider mb-3">Explore by Category</h2>
+              <div className="grid grid-cols-4 gap-3">
+                {categories.slice(0, 8).map((cat, idx) => (
+                  <motion.button
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05 }}
                     key={cat.id}
                     onClick={() => setActiveCategory(cat.slug === activeCategory ? null : cat.slug)}
-                    className={cn('shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-all',
-                      activeCategory === cat.slug ? 'bg-amber-500 text-white shadow-md' : 'bg-muted text-muted-foreground')}
+                    className={cn('flex flex-col items-center gap-2 rounded-xl text-center',
+                      activeCategory === cat.slug ? 'scale-105' : 'hover:scale-105 transition-transform')}
                   >
-                    {cat.iconEmoji} {cat.name}
-                  </button>
+                    <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-sm border border-slate-100", 
+                       activeCategory === cat.slug ? 'bg-amber-100 ring-2 ring-amber-500' : 'bg-white')}>
+                        {cat.iconEmoji}
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-700 leading-tight">{cat.name}</span>
+                  </motion.button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Merchant grid */}
+          {/* Merchant feed */}
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-black text-lg text-foreground">Stores Near You</h2>
-              <span className="text-xs text-muted-foreground font-bold">{filtered.length} open</span>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-black text-lg text-slate-800">Stores near you</h2>
+              <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-bold">{filtered.length} Open</span>
             </div>
 
             {loading ? (
               <div className="grid grid-cols-1 gap-4">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="h-32 bg-muted animate-pulse rounded-2xl" />
+                  <div key={i} className="h-48 bg-slate-200 animate-pulse rounded-3xl" />
                 ))}
               </div>
             ) : filtered.length === 0 ? (
               <Card className="p-8 text-center border-dashed border-2 bg-transparent shadow-none">
-                <ShoppingBag className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
-                <p className="font-bold text-foreground">No stores found</p>
-                <p className="text-sm text-muted-foreground mt-1">
+                <ShoppingBag className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                <p className="font-bold text-slate-800">No stores found</p>
+                <p className="text-sm text-slate-500 mt-1">
                   {!userLocation ? 'Enable location to see nearby stores.' : 'No stores are open in your area yet.'}
                 </p>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 gap-4">
-                {filtered.map(m => (
-                  <Link key={m.id} to={`/store/merchant/${m.id}`} id={`store-card-${m.id}`}>
-                    <Card className="overflow-hidden hover:shadow-xl hover:shadow-amber-500/5 transition-all duration-300 border border-border/50 p-0">
-                      {/* Store header strip */}
-                      <div className="bg-gradient-to-r from-amber-400 to-orange-400 h-20 relative flex items-end p-4">
-                        <div className="text-3xl absolute top-3 right-4 opacity-60">
-                          {storeTypeEmoji[m.storeType] || '🏪'}
+              <div className="grid sm:grid-cols-2 gap-4">
+                <AnimatePresence>
+                  {filtered.map(m => (
+                    <motion.div key={m.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <Link to={`/store/merchant/${m.id}`} id={`store-card-${m.id}`}>
+                      <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 border-0 shadow-sm bg-white rounded-3xl relative">
+                        {/* Store cover image area */}
+                        <div className="bg-gradient-to-r from-slate-100 to-slate-200 h-28 relative flex p-3">
+                           <div className="absolute right-0 bottom-0 text-7xl opacity-10 translate-x-4 translate-y-4 filter blur-[2px]">
+                              {storeTypeEmoji[m.storeType] || '🏪'}
+                           </div>
+                           
+                           {/* Delivery time pill overlay */}
+                           <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md rounded-xl px-2 py-1 shadow-sm flex flex-col items-center">
+                               <span className="text-xs font-black text-slate-800">{Math.round(m.distanceKm * 4 + 10)}</span>
+                               <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest leading-none">MINS</span>
+                           </div>
+
+                           {/* Free Delivery badge */}
+                           {m.freeDeliveryThreshold && (
+                               <div className="absolute bottom-3 left-3 bg-green-500 text-white text-[9px] font-black uppercase px-2 py-1 rounded-md shadow-sm">
+                                   Free Delivery Available
+                               </div>
+                           )}
                         </div>
-                        <span className="text-[10px] bg-white/25 backdrop-blur-sm font-black uppercase tracking-wider text-white px-2 py-1 rounded-full">
-                          {m.storeType}
-                        </span>
-                      </div>
-                      <div className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-black text-base text-foreground leading-tight">{m.storeName}</h3>
-                            {m.tagline && <p className="text-xs text-muted-foreground mt-0.5">{m.tagline}</p>}
+
+                        {/* Store Details Box */}
+                        <div className="p-4 relative">
+                          {/* Store Avatar overlapping */}
+                          <div className="absolute -top-10 left-4 w-16 h-16 bg-white rounded-2xl shadow-md border border-slate-100 flex items-center justify-center text-3xl">
+                              {storeTypeEmoji[m.storeType] || '🏪'}
                           </div>
-                          <span className="text-amber-500 font-bold text-sm bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-lg shrink-0">
-                            ₹{m.minOrderValue}+
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <MapPin size={11} />
-                            {m.distanceKm?.toFixed(1)} km
-                          </span>
-                          {m.avgRating > 0 && (
-                            <span className="flex items-center gap-1 text-amber-500 font-bold">
-                              <Star size={11} fill="currentColor" />
-                              {m.avgRating.toFixed(1)}
+                          
+                          <div className="mt-6 flex items-start justify-between">
+                            <div className="pr-2">
+                              <h3 className="font-black text-base text-slate-800 leading-tight">{m.storeName}</h3>
+                              {m.tagline ? <p className="text-[11px] font-medium text-slate-500 mt-0.5 line-clamp-1">{m.tagline}</p> : <p className="text-[11px] font-medium text-slate-500 mt-0.5 uppercase tracking-wider">{m.storeType}</p>}
+                            </div>
+                            {m.avgRating > 0 && (
+                                <div className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded-lg flex items-center gap-1 font-bold text-xs shrink-0 mt-0.5">
+                                    <Star size={10} fill="currentColor" />
+                                    {m.avgRating.toFixed(1)}
+                                </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-3 mt-4 text-[11px] font-bold text-slate-400">
+                            <span className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-md">
+                              <MapPin size={10} className="text-amber-500" />
+                              {m.distanceKm?.toFixed(1)} KM AWAY
                             </span>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <Clock size={11} />
-                            {Math.round(m.distanceKm * 4 + 10)} min
-                          </span>
+                            <span className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-md">
+                              ₹{m.minOrderValue} MIN ORDER
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    </Card>
-                  </Link>
-                ))}
+                      </Card>
+                    </Link>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
             )}
           </div>
 
-          {/* Become a merchant CTA */}
-          <Card className="p-5 bg-gradient-to-br from-foreground to-foreground/90 text-background border-0 shadow-xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-black text-base">Own a store?</p>
-                <p className="text-xs text-background/60 mt-0.5">List your products, reach more customers</p>
-              </div>
-              <Button
-                size="sm"
-                className="bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-lg shadow-amber-500/30 border-0"
-                onClick={() => navigate('/merchant/onboard')}
-                id="btn-become-merchant"
-              >
-                List Store
-              </Button>
-            </div>
-          </Card>
         </div>
       </div>
     </AppShell>
