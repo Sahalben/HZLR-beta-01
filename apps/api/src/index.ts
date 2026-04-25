@@ -19,12 +19,14 @@ if (!process.env.JWT_ACCESS_SECRET) {
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Restrict CORS to known frontend origins — configure via ALLOWED_ORIGIN env var in Railway/Vercel
+// Restrict CORS to known frontend origins
+// Set ALLOWED_ORIGINS in Railway as a comma-separated list:
+// e.g. https://www.hzlr.online,https://hzlr-beta-01-6hfm10t64-sahalbens-projects.vercel.app
 const ALLOWED_ORIGINS = [
-    process.env.ALLOWED_ORIGIN,          // e.g. https://hzlr.vercel.app
-    'http://localhost:5173',              // local dev
-    'http://localhost:4173',              // local preview
-].filter(Boolean) as string[];
+    ...(process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim()).filter(Boolean),
+    'http://localhost:5173',
+    'http://localhost:4173',
+];
 
 app.use(helmet());
 app.use(cors({
