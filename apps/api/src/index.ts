@@ -11,10 +11,16 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Fail fast — never start with a missing JWT secret
-if (!process.env.JWT_ACCESS_SECRET) {
+const jwtSecret = process.env['JWT_ACCESS_SECRET'];
+console.log('[boot] NODE_ENV:', process.env.NODE_ENV);
+console.log('[boot] env keys present:', Object.keys(process.env).filter(k => k.startsWith('JWT') || k === 'NODE_ENV' || k === 'DATABASE_URL' || k === 'PORT').join(', '));
+console.log('[boot] JWT_ACCESS_SECRET present:', !!jwtSecret, '| length:', jwtSecret ? jwtSecret.length : 0);
+
+if (!jwtSecret) {
     console.error('FATAL: JWT_ACCESS_SECRET environment variable is not set. Refusing to start.');
     process.exit(1);
 }
+
 
 const app = express();
 const PORT = process.env.PORT || 8080;
