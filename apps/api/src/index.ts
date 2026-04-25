@@ -10,14 +10,30 @@ if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
 }
 
+// Fail fast — never start with a missing JWT secret
+if (!process.env.JWT_ACCESS_SECRET) {
+    console.error('FATAL: JWT_ACCESS_SECRET environment variable is not set. Refusing to start.');
+    process.exit(1);
+}
+
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// Restrict CORS to known frontend origins — configure via ALLOWED_ORIGIN env var in Railway/Vercel
+const ALLOWED_ORIGINS = [
+    process.env.ALLOWED_ORIGIN,          // e.g. https://hzlr.vercel.app
+    'http://localhost:5173',              // local dev
+    'http://localhost:4173',              // local preview
+].filter(Boolean) as string[];
+
 app.use(helmet());
 app.use(cors({
-  // Safely reflects any origin automatically
-  origin: true,
-  credentials: true
+    origin: (origin, callback) => {
+        // allow requests with no origin (mobile apps, curl, server-to-server)
+        if (!origin || ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+        callback(new Error(`CORS: origin '${origin}' not allowed`));
+    },
+    credentials: true
 }));
 app.use(express.json());
 
@@ -31,26 +47,19 @@ export function getIO() {
 
 io = new Server(httpServer, {
     cors: {
-        origin: '*',
+        origin: ALLOWED_ORIGINS,
         methods: ['GET', 'POST']
     }
 });
 
 io.on('connection', (socket: any) => {
-    console.log('A user connected via socket:', socket.id);
-
-    // Room joins for targeted events
-    socket.on('join:merchant', (merchantId: string) => socket.join(`merchant:${merchantId}`));
-    socket.on('join:delivery', (userId: string) => socket.join(`delivery:${userId}`));
-    socket.on('join:order', (orderId: string) => socket.join(`order:${orderId}`));
-
-    // Delivery partner live location — broadcast to order room for customer tracking
-    socket.on('delivery:location', (data: { orderId: string; lat: number; lng: number }) => {
-        io.to(`order:${data.orderId}`).emit('delivery:location', data);
-    });
+    // Room joins for targeted real-time events
+    socket.on('join:worker', (workerId: string) => socket.join(`worker:${workerId}`));
+    socket.on('join:employer', (employerId: string) => socket.join(`employer:${employerId}`));
+    socket.on('join:job', (jobId: string) => socket.join(`job:${jobId}`));
 
     socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
+        // intentionally silent in production
     });
 });
 
@@ -66,16 +75,18 @@ import notificationsRoutes from './routes/notifications';
 import employersRoutes from './routes/employers';
 import storeRouter from './routes/store/index';
 
+const isProd = process.env.NODE_ENV === 'production';
+
 const otpSendLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 100, // Raised significantly for development testing
-  message: { error: 'Too many OTP requests. Try again in 1 hour.' }
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: isProd ? 5 : 50,     // 5/hr in prod — prevents SMS bombing
+    message: { error: 'Too many OTP requests. Try again in 1 hour.' }
 });
 
 const otpVerifyLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100, // Raised significantly for development testing
-  message: { error: 'Too many attempts. Request a new OTP.' }
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: isProd ? 10 : 50,    // 10 attempts per 15 min in prod
+    message: { error: 'Too many attempts. Request a new OTP.' }
 });
 
 app.use('/api/v1/auth/send-otp', otpSendLimiter);

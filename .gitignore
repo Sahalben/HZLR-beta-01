@@ -2,8 +2,14 @@ node_modules
 .DS_Store
 *.log
 .env
+.env.local
+.env*.local
 dist
 build
 coverage
 .vite
 .swc
+*.audit.json
+audit_api.json
+audit_web.json
+test_auth.js

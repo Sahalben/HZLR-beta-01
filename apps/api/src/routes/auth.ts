@@ -3,7 +3,7 @@ import { prisma } from '../db';
 import jwt from 'jsonwebtoken';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_ACCESS_SECRET || 'fallback_secret_for_dev_min_64_chars';
+const JWT_SECRET = process.env.JWT_ACCESS_SECRET!; // hard-fail enforced at startup in index.ts
 
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
@@ -13,7 +13,7 @@ import crypto from 'crypto';
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 200, // Raised for testing
+    max: process.env.NODE_ENV === 'production' ? 20 : 200,
     message: { error: 'Too many auth requests from this IP, please try again after 15 minutes' }
 });
 
@@ -85,9 +85,9 @@ router.post('/send-otp', async (req, res) => {
         }
     }
 
-    // Graceful fallback to Mock OTP
-    console.log("Mock OTP for phone:", otp);
-    res.json({ success: true, message: 'MOCK OTP sent to ' + phone, mockOtp: otp });
+    // Graceful fallback when Twilio is unavailable — OTP logged server-side only, never in response
+    if (process.env.NODE_ENV !== 'production') console.log('Dev OTP (phone):', otp);
+    res.json({ success: true, message: 'OTP sent to ' + phone });
 });
 
 // Send OTP via Email
@@ -111,7 +111,7 @@ router.post('/send-email-otp', async (req, res) => {
         await sendOtpEmail(email, otp);
     } catch(e: any) {
         console.error("Email send failed:", e.message);
-        console.log("Mock OTP for email fallback:", otp);
+        if (process.env.NODE_ENV !== 'production') console.log('Dev OTP (email):', otp);
         // If Resend fails, we should ideally not throw a 500 so local development continues with Mock,
         // but wait! If we are in prod (Railway), we NEED the email to work.
         // For now, if it fails, it prints it locally for fallback safety.
