@@ -248,18 +248,17 @@ export function ForWorkers() {
 
           {/* ── [4] Full-width CTA strip ── */}
           <BentoCard
-            className="md:col-span-3 p-8 flex flex-col sm:flex-row items-center justify-between gap-6"
-            glowColor="hsl(158 55% 30%)"
+            className="md:col-span-3 px-10 py-10 flex flex-col sm:flex-row items-center justify-between gap-10"
           >
-            <div>
+            <div className="max-w-lg">
               <h3 className="text-xl font-bold text-foreground">
                 Ready to start earning on your terms?
               </h3>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground mt-2">
                 Free to join. No commissions taken from your pay.
               </p>
             </div>
-            <Button variant="default" size="lg" asChild className="flex-shrink-0">
+            <Button variant="default" size="lg" asChild className="flex-shrink-0 whitespace-nowrap">
               <Link to="/signup">
                 Start Working Today
                 <ArrowRight size={18} />
