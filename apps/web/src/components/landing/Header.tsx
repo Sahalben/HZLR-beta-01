@@ -36,13 +36,7 @@ export function Header() {
                 {link.label}
               </a>
             ))}
-            <Link
-              to="/store"
-              className="text-sm font-bold text-amber-500 hover:text-amber-400 transition-colors flex items-center gap-1.5"
-            >
-              Hzlr Store
-              <span className="bg-amber-500/20 text-amber-500 text-[9px] px-1.5 py-0.5 rounded uppercase font-black tracking-wider">New</span>
-            </Link>
+            {/* <Link to="/store"> HZLR Store link hidden — STORE_DELAYED */}
           </nav>
 
           {/* Desktop CTAs */}
@@ -84,13 +78,7 @@ export function Header() {
               {link.label}
             </a>
           ))}
-          <Link
-            to="/store"
-            className="text-base font-bold text-amber-500 py-2 flex items-center gap-2"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            Hzlr Store <span className="bg-amber-500/20 px-2 py-0.5 rounded text-[10px] uppercase font-black">New</span>
-          </Link>
+          {/* <Link to="/store"> HZLR Store mobile link hidden — STORE_DELAYED */}
           <div className="flex flex-col gap-3 pt-4 border-t border-primary-foreground/10">
             <Button variant="heroOutline" asChild>
               <Link to="/login">Log In</Link>

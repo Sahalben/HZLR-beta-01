@@ -11,7 +11,7 @@ import { Pricing } from "@/components/landing/Pricing";
 import { CTASection } from "@/components/landing/CTASection";
 import { Footer } from "@/components/landing/Footer";
 import { InteractiveDemo } from "@/components/landing/InteractiveDemo";
-import { StoreShowcase } from "@/components/landing/StoreShowcase";
+// import { StoreShowcase } from "@/components/landing/StoreShowcase"; // STORE_DELAYED
 
 const Index = () => {
   return (
@@ -20,7 +20,7 @@ const Index = () => {
       <main>
         <Hero />
         <InteractiveDemo />
-        <StoreShowcase />
+        {/* <StoreShowcase /> STORE_DELAYED */}
         <TripleGuarantee />
         <HowItWorks />
         <MarketProof />
