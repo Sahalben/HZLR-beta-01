@@ -23,7 +23,7 @@ const Index = () => {
         {/* <StoreShowcase /> STORE_DELAYED */}
         <TripleGuarantee />
         <HowItWorks />
-        <MarketProof />
+        {/* <MarketProof /> */}
         <BackupQueue />
         <Safety />
         <ForWorkers />
