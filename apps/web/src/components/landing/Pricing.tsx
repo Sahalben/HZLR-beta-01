@@ -5,8 +5,33 @@ import { Card } from "@/components/ui/card";
 
 export function Pricing() {
   return (
-    <section id="pricing" className="py-20 md:py-28 bg-primary text-primary-foreground">
-      <div className="container mx-auto px-4 sm:px-6">
+    <section id="pricing" className="relative py-20 md:py-28 bg-primary text-primary-foreground overflow-hidden">
+      {/* Subtle animated grid background */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes pricing-grid-anim {
+          0% {
+            background-position: 0 0;
+          }
+          100% {
+            background-position: 40px 40px;
+          }
+        }
+      `}} />
+      <div 
+        className="absolute inset-0 pointer-events-none opacity-[0.05]" 
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, currentColor 1px, transparent 1px),
+            linear-gradient(to bottom, currentColor 1px, transparent 1px)
+          `,
+          backgroundSize: '40px 40px',
+          animation: 'pricing-grid-anim 25s linear infinite'
+        }}
+      />
+      {/* Subtle vignette layer */}
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-transparent to-black/10" />
+
+      <div className="container mx-auto px-4 sm:px-6 relative z-10">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span className="inline-block text-sm font-semibold text-primary-foreground/60 mb-4 tracking-wide uppercase">
