@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 export function CTASection() {
-  return <section className="py-20 md:py-28 bg-background overflow-hidden">
+  return <section className="py-20 md:py-28 bg-white overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="relative bg-primary rounded-3xl p-8 md:p-16 overflow-hidden">
           {/* Background Decoration */}
