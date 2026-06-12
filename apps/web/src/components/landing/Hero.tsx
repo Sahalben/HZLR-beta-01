@@ -28,7 +28,9 @@ export function Hero() {
       </div>
 
       {/* Seamless blend transition overlay to next section */}
-      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent pointer-events-none z-[2]" />
+      <div className="dark">
+        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent pointer-events-none z-[2]" />
+      </div>
 
       <div className="container mx-auto px-4 sm:px-6 py-8 md:py-12 relative z-10">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">

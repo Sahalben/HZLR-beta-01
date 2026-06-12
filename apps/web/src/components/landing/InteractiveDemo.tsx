@@ -248,7 +248,7 @@ export function InteractiveDemo() {
   };
 
   return (
-    <section className="py-20 md:py-32 relative overflow-hidden bg-background">
+    <section className="dark py-20 md:py-32 relative overflow-hidden bg-background">
       {/* Dot Background from Aceternity */}
       <div
         className={cn(
