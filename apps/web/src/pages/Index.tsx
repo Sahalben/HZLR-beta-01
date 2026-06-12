@@ -7,7 +7,6 @@ import { Safety } from "@/components/landing/Safety";
 import { ForWorkers } from "@/components/landing/ForWorkers";
 import { ForEmployers } from "@/components/landing/ForEmployers";
 import { Pricing } from "@/components/landing/Pricing";
-import { CTASection } from "@/components/landing/CTASection";
 import { Footer } from "@/components/landing/Footer";
 import { InteractiveDemo } from "@/components/landing/InteractiveDemo";
 // import { StoreShowcase } from "@/components/landing/StoreShowcase"; // STORE_DELAYED
@@ -27,7 +26,6 @@ const Index = () => {
         <ForEmployers />
         <Pricing />
         <Safety />
-        <CTASection />
       </main>
       <Footer />
     </div>
