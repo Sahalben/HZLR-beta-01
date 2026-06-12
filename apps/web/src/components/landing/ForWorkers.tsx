@@ -1,6 +1,4 @@
-import { Link } from "react-router-dom";
-import { ArrowRight, Wallet, Shield, TrendingUp, Clock, MapPin, Award } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Wallet, Shield, TrendingUp, Clock, MapPin, Award } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ─── Bento card primitives ────────────────────────────────────────────────────
@@ -14,8 +12,8 @@ function BentoCard({ className, children }: BentoCardProps) {
   return (
     <div
       className={cn(
-        "relative rounded-3xl border border-border/60 bg-background overflow-hidden",
-        "transition-all duration-300 hover:border-primary/30 hover:shadow-lg",
+        "relative rounded-3xl border border-border/50 bg-card/60 backdrop-blur-sm overflow-hidden",
+        "transition-all duration-300 hover:border-primary/25 hover:shadow-lg",
         className,
       )}
     >
@@ -60,7 +58,11 @@ function TimelineStep({
 // ─── Section ─────────────────────────────────────────────────────────────────
 export function ForWorkers() {
   return (
-    <section id="workers" className="py-20 md:py-28 bg-secondary/40">
+    <section id="workers" className="relative py-20 md:py-28 bg-background overflow-hidden">
+      {/* Top bleed — fades seamlessly from WhyHZLR */}
+      <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-background via-background/80 to-transparent pointer-events-none z-10" />
+      {/* Subtle ambient orb */}
+      <div className="absolute top-[10%] right-[5%] w-[500px] h-[400px] rounded-full bg-primary/[0.03] blur-[100px] pointer-events-none" />
       <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
 
         {/* ── Header ── */}
@@ -90,7 +92,6 @@ export function ForWorkers() {
           {/* ── [1,1] HERO — How it flows ── */}
           <BentoCard
             className="md:col-span-2 md:row-span-2 p-8 flex flex-col justify-between min-h-[340px]"
-            glowColor="hsl(158 55% 30%)"
           >
             {/* Top: icon + title */}
             <div>
@@ -124,7 +125,6 @@ export function ForWorkers() {
           {/* ── [1,3] Instant Payouts ── */}
           <BentoCard
             className="p-7 flex flex-col justify-between min-h-[160px]"
-            glowColor="hsl(142 60% 32%)"
           >
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-4">
               <Wallet size={20} className="text-emerald-600" />
@@ -148,7 +148,6 @@ export function ForWorkers() {
           {/* ── [2,3] Guaranteed Fair Pay ── */}
           <BentoCard
             className="p-7 flex flex-col justify-between min-h-[160px]"
-            glowColor="hsl(217 70% 45%)"
           >
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4">
               <Shield size={20} className="text-blue-500" />
@@ -169,7 +168,6 @@ export function ForWorkers() {
           {/* ── [3,1] Work When You Want ── */}
           <BentoCard
             className="p-7 flex flex-col justify-between min-h-[160px]"
-            glowColor="hsl(38 90% 48%)"
           >
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center mb-4">
               <Clock size={20} className="text-amber-500" />
@@ -201,7 +199,6 @@ export function ForWorkers() {
           {/* ── [3,2] Find Local Opportunities ── */}
           <BentoCard
             className="p-7 flex flex-col justify-between min-h-[160px]"
-            glowColor="hsl(158 55% 35%)"
           >
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
               <MapPin size={20} className="text-primary" />
@@ -223,7 +220,6 @@ export function ForWorkers() {
           {/* ── [3,3] Grow Your Credibility ── */}
           <BentoCard
             className="p-7 flex flex-col justify-between min-h-[160px]"
-            glowColor="hsl(280 60% 50%)"
           >
             <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center mb-4">
               <Award size={20} className="text-purple-500" />
@@ -246,25 +242,7 @@ export function ForWorkers() {
             </div>
           </BentoCard>
 
-          {/* ── [4] Full-width CTA strip ── */}
-          <BentoCard
-            className="md:col-span-3 px-10 py-10 flex flex-col sm:flex-row items-center justify-between gap-10"
-          >
-            <div className="max-w-lg">
-              <h3 className="text-xl font-bold text-foreground">
-                Ready to start earning on your terms?
-              </h3>
-              <p className="text-sm text-muted-foreground mt-2">
-                Free to join. No commissions taken from your pay.
-              </p>
-            </div>
-            <Button variant="default" size="lg" asChild className="flex-shrink-0 whitespace-nowrap">
-              <Link to="/signup">
-                Start Working Today
-                <ArrowRight size={18} />
-              </Link>
-            </Button>
-          </BentoCard>
+
 
         </div>
       </div>

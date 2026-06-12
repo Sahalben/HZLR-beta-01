@@ -276,6 +276,8 @@ export function WhyHZLR() {
 
   return (
     <section ref={sectionRef} id="why-hzlr" className="relative bg-background overflow-hidden">
+      {/* Bottom bleed — dissolves into ForWorkers */}
+      <div className="absolute bottom-0 inset-x-0 h-40 bg-gradient-to-t from-background via-background/70 to-transparent pointer-events-none z-10" />
 
       {/* ── Parallax background ── */}
       <motion.div style={{ y: bgY }} className="absolute inset-0 pointer-events-none">

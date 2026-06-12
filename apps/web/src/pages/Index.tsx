@@ -24,9 +24,9 @@ const Index = () => {
         <ForWorkers />
         {/* <MarketProof /> */}
         <BackupQueue />
-        <Safety />
         <ForEmployers />
         <Pricing />
+        <Safety />
         <CTASection />
       </main>
       <Footer />
