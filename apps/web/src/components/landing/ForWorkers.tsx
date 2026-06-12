@@ -58,7 +58,7 @@ function TimelineStep({
 // ─── Section ─────────────────────────────────────────────────────────────────
 export function ForWorkers() {
   return (
-    <section id="workers" className="relative py-20 md:py-28 bg-background overflow-hidden">
+    <section id="workers" className="dark relative py-20 md:py-28 bg-background overflow-hidden">
       {/* Top bleed — fades seamlessly from WhyHZLR */}
       <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-background via-background/80 to-transparent pointer-events-none z-10" />
       {/* Subtle ambient orb */}
