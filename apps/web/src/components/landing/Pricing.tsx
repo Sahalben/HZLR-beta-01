@@ -25,7 +25,9 @@ export function Pricing() {
             linear-gradient(to bottom, currentColor 1px, transparent 1px)
           `,
           backgroundSize: '40px 40px',
-          animation: 'pricing-grid-anim 25s linear infinite'
+          animation: 'pricing-grid-anim 25s linear infinite',
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent, rgba(0,0,0,1) 150px, rgba(0,0,0,1) calc(100% - 120px), transparent)',
+          maskImage: 'linear-gradient(to bottom, transparent, rgba(0,0,0,1) 150px, rgba(0,0,0,1) calc(100% - 120px), transparent)'
         }}
       />
       {/* Subtle vignette layer */}
