@@ -158,6 +158,8 @@ export function Pricing() {
 
         </div>
       </div>
+      {/* Bottom bleed — dissolves into Safety */}
+      <div className="absolute bottom-0 inset-x-0 h-40 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none z-10" />
     </section>
   );
 }

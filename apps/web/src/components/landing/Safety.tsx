@@ -3,7 +3,9 @@ import { Card } from "@/components/ui/card";
 
 export function Safety() {
   return (
-    <section className="dark py-20 md:py-28 bg-background">
+    <section className="dark relative py-20 md:py-28 bg-background overflow-hidden">
+      {/* Top bleed — fades seamlessly from Pricing */}
+      <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-background via-background/80 to-transparent pointer-events-none z-10" />
       <div className="container mx-auto px-4 sm:px-6">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
