@@ -6,7 +6,7 @@ import { SpectraNoise } from "./SpectraNoise";
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen hero-gradient pt-16 md:pt-20 overflow-hidden">
+    <section className="relative lg:min-h-[640px] xl:min-h-[700px] min-h-[85vh] hero-gradient pt-20 md:pt-24 overflow-hidden flex items-center">
       {/* Dynamic Spectra Noise Background */}
       <div className="absolute inset-0 pointer-events-none opacity-30 mix-blend-screen z-0">
         <SpectraNoise 
@@ -17,13 +17,13 @@ export function Hero() {
         />
       </div>
 
-      <div className="container mx-auto px-4 sm:px-6 py-12 md:py-20 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+      <div className="container mx-auto px-4 sm:px-6 py-8 md:py-12 relative z-10">
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
           {/* Left Column - Content */}
           <div className="text-center lg:text-left">
 
             {/* Headline */}
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-primary-foreground leading-[1.1] mb-6 animate-fade-up animation-delay-200">
+            <h1 className="text-4xl sm:text-5xl lg:text-5xl xl:text-6xl font-black text-primary-foreground leading-[1.1] mb-5 animate-fade-up animation-delay-200">
               Your Gig.
               <br />
               Your Terms.
@@ -32,20 +32,20 @@ export function Hero() {
             </h1>
 
             {/* Subheadline */}
-            <p className="text-lg md:text-xl text-primary-foreground/70 max-w-xl mx-auto lg:mx-0 mb-8 animate-fade-up animation-delay-400">
+            <p className="text-base md:text-lg text-primary-foreground/70 max-w-xl mx-auto lg:mx-0 mb-6 animate-fade-up animation-delay-400">
               Spot Payment. Verified Workers. No middlemen. India's first secure 
               daily gig marketplace with guaranteed fair pay and instant payouts.
             </p>
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-fade-up animation-delay-600">
-              <Button variant="hero" size="xl" asChild>
+              <Button variant="hero" size="lg" asChild>
                 <Link to="/worker/signup">
                   Start Working Today
                   <ArrowRight size={20} />
                 </Link>
               </Button>
-              <Button variant="heroOutline" size="xl" asChild>
+              <Button variant="heroOutline" size="lg" asChild>
                 <Link to="/employer/signup">
                   Hire Verified Talent
                 </Link>
