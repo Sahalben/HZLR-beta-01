@@ -2,11 +2,22 @@ import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { HeroDemo } from "./HeroDemo";
+import { SpectraNoise } from "./SpectraNoise";
 
 export function Hero() {
   return (
     <section className="relative min-h-screen hero-gradient pt-16 md:pt-20 overflow-hidden">
-      <div className="container mx-auto px-4 sm:px-6 py-12 md:py-20">
+      {/* Dynamic Spectra Noise Background */}
+      <div className="absolute inset-0 pointer-events-none opacity-30 mix-blend-screen z-0">
+        <SpectraNoise 
+          speed={0.08} 
+          noiseIntensity={0.015} 
+          warpAmount={0.3} 
+          resolutionScale={0.5} 
+        />
+      </div>
+
+      <div className="container mx-auto px-4 sm:px-6 py-12 md:py-20 relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left Column - Content */}
           <div className="text-center lg:text-left">
@@ -52,8 +63,8 @@ export function Hero() {
       </div>
 
       {/* Background Decorations */}
-      <div className="absolute top-1/4 right-0 w-96 h-96 bg-seafoam/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-success/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-1/4 right-0 w-96 h-96 bg-seafoam/20 rounded-full blur-[120px] pointer-events-none z-0" />
+      <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-success/10 rounded-full blur-[100px] pointer-events-none z-0" />
     </section>
   );
 }
