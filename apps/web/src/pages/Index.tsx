@@ -1,7 +1,6 @@
 import { Header } from "@/components/landing/Header";
 import { Hero } from "@/components/landing/Hero";
-import { TripleGuarantee } from "@/components/landing/TripleGuarantee";
-import { HowItWorks } from "@/components/landing/HowItWorks";
+import { WhyHZLR } from "@/components/landing/WhyHZLR";
 import { MarketProof } from "@/components/landing/MarketProof";
 import { BackupQueue } from "@/components/landing/BackupQueue";
 import { Safety } from "@/components/landing/Safety";
@@ -21,12 +20,11 @@ const Index = () => {
         <Hero />
         <InteractiveDemo />
         {/* <StoreShowcase /> STORE_DELAYED */}
-        <TripleGuarantee />
-        <HowItWorks />
+        <WhyHZLR />
+        <ForWorkers />
         {/* <MarketProof /> */}
         <BackupQueue />
         <Safety />
-        <ForWorkers />
         <ForEmployers />
         <Pricing />
         <CTASection />
