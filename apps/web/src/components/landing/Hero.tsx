@@ -6,11 +6,11 @@ import { AnimatedGradientBackground } from "./AnimatedLiquidBackground";
 
 export function Hero() {
   return (
-    <section className="relative lg:min-h-[640px] xl:min-h-[700px] min-h-[85vh] bg-[#022c22] pt-20 md:pt-24 overflow-hidden flex items-center">
+    <section className="dark relative lg:min-h-[640px] xl:min-h-[700px] min-h-[85vh] bg-background pt-20 md:pt-24 overflow-hidden flex items-center">
       {/* Framer Animated Liquid Background */}
       <div className="absolute inset-0 pointer-events-none z-0">
         <AnimatedGradientBackground 
-          color1="#021c12" // Very deep forest green base
+          color1="#01170f" // Brand dark HZLR green base
           color2="#064e3b" // Mid forest green
           color3="#10b981" // Brand emerald green accent
           speed={12}       // Elegant, slow moving speed
@@ -28,9 +28,7 @@ export function Hero() {
       </div>
 
       {/* Seamless blend transition overlay to next section */}
-      <div className="dark">
-        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent pointer-events-none z-[2]" />
-      </div>
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent pointer-events-none z-[2]" />
 
       <div className="container mx-auto px-4 sm:px-6 py-8 md:py-12 relative z-10">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
