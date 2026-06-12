@@ -2,9 +2,9 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 export function CTASection() {
-  return <section className="py-20 md:py-28 bg-white overflow-hidden">
+  return <section className="dark py-20 md:py-28 bg-background overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6">
-        <div className="relative bg-primary rounded-3xl p-8 md:p-16 overflow-hidden">
+        <div className="relative bg-[#022c22] border border-white/5 rounded-3xl p-8 md:p-16 overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
           {/* Background Decoration */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-seafoam/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2" />

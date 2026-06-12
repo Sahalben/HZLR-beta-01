@@ -25,7 +25,7 @@ function AnimatedBorderWrapper({ children, glowColors }: { children: React.React
 
 export function Pricing() {
   return (
-    <section id="pricing" className="relative py-20 md:py-28 bg-primary text-primary-foreground overflow-hidden">
+    <section id="pricing" className="dark relative py-20 md:py-28 bg-background text-foreground overflow-hidden">
       {/* Subtle animated grid background */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes pricing-grid-anim {
@@ -64,13 +64,13 @@ export function Pricing() {
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <span className="inline-block text-sm font-semibold text-primary-foreground/60 mb-4 tracking-wide uppercase">
+          <span className="inline-block text-sm font-semibold text-muted-foreground mb-4 tracking-wide uppercase">
             Simple Pricing
           </span>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-primary-foreground mb-6">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-6">
             Transparent. Fair. Always.
           </h2>
-          <p className="text-lg text-primary-foreground/60">
+          <p className="text-lg text-muted-foreground">
             Workers pay nothing. Employers pay only for successful hires.
           </p>
         </div>
