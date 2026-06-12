@@ -1,48 +1,49 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, MapPin, Wallet, FileText, Users } from "lucide-react";
+import { CheckCircle2, MapPin, Wallet, FileText, Users, Wifi, Battery } from "lucide-react";
+import { IPhoneSimMockup } from "./IPhoneSimMockup";
 
 const demoSteps = [
   {
     icon: Wallet,
     title: "Employer Prefunds",
     subtitle: "₹900 secured in escrow",
-    colorClass: "text-[hsl(var(--status-success))]",
-    bgClass: "bg-[hsl(var(--status-success)/0.15)]",
+    bg: "rgba(16, 185, 129, 0.15)",
+    color: "#34d399",
   },
   {
     icon: Users,
     title: "Worker Applies",
     subtitle: "Verified profile matched",
-    colorClass: "text-[hsl(var(--status-info))]",
-    bgClass: "bg-[hsl(var(--status-info)/0.15)]",
+    bg: "rgba(59, 130, 246, 0.15)",
+    color: "#60a5fa",
   },
   {
     icon: MapPin,
     title: "Geo Check-in",
     subtitle: "Worker arrives on-site",
-    colorClass: "text-[hsl(var(--status-warning))]",
-    bgClass: "bg-[hsl(var(--status-warning)/0.15)]",
+    bg: "rgba(245, 158, 11, 0.15)",
+    color: "#fbbf24",
   },
   {
     icon: CheckCircle2,
     title: "Employer Confirms",
     subtitle: "Work completed ✓",
-    colorClass: "text-[hsl(var(--status-success))]",
-    bgClass: "bg-[hsl(var(--status-success)/0.15)]",
+    bg: "rgba(16, 185, 129, 0.15)",
+    color: "#34d399",
   },
   {
     icon: Wallet,
     title: "Instant Payout",
     subtitle: "₹900 → Worker wallet",
-    colorClass: "text-[hsl(var(--status-success))]",
-    bgClass: "bg-[hsl(var(--status-success)/0.15)]",
+    bg: "rgba(16, 185, 129, 0.15)",
+    color: "#34d399",
   },
   {
     icon: FileText,
     title: "Resume Updated",
     subtitle: "Digital credential added",
-    colorClass: "text-[hsl(var(--status-pending))]",
-    bgClass: "bg-[hsl(var(--status-pending)/0.15)]",
+    bg: "rgba(168, 85, 247, 0.15)",
+    color: "#c084fc",
   },
 ];
 
@@ -66,59 +67,120 @@ export function HeroDemo() {
   const Icon = step.icon;
 
   return (
-    <div className="relative w-full max-w-[280px] lg:max-w-[250px] xl:max-w-[270px] mx-auto">
-      {/* Phone Frame */}
-      <div className="relative bg-[hsl(var(--surface-darker))] rounded-[2.5rem] p-2.5 shadow-2xl">
-        {/* Phone Notch */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-5 bg-[hsl(var(--surface-darker))] rounded-b-xl" />
-        
-        {/* Screen */}
-        <div className="bg-[hsl(var(--surface-lighter))] rounded-[2.1rem] overflow-hidden aspect-[9/19]">
-          {/* Status Bar */}
-          <div className="h-10 bg-primary flex items-center justify-center">
-            <span className="text-[10px] font-semibold text-primary-foreground/80">HZLR.</span>
+    <div className="relative w-full max-w-[310px] lg:max-w-[280px] xl:max-w-[300px] mx-auto">
+      <IPhoneSimMockup variant="iPhone 17 Pro" className="w-full">
+        {/* iOS Screen Content */}
+        <div 
+          className="w-full h-full bg-[#031510] text-white flex flex-col justify-between relative overflow-hidden"
+          style={{
+            paddingTop: "22cqw",
+            paddingBottom: "8cqw",
+            paddingLeft: "3cqw",
+            paddingRight: "3cqw"
+          }}
+        >
+          {/* iOS Status Bar */}
+          <span 
+            className="absolute text-white/90 z-10" 
+            style={{ 
+              left: "6cqw", 
+              top: "7.5cqw", 
+              fontSize: "2.8cqw", 
+              fontWeight: 600 
+            }}
+          >
+            9:41
+          </span>
+          <div 
+            className="absolute flex items-center text-white/90 z-10" 
+            style={{ 
+              right: "6cqw", 
+              top: "8cqw", 
+              gap: "1cqw" 
+            }}
+          >
+            <Wifi style={{ width: "3.2cqw", height: "3.2cqw" }} className="stroke-[2.5]" />
+            <Battery style={{ width: "4cqw", height: "2.8cqw" }} className="stroke-[2.5]" />
           </div>
 
-          {/* Demo Content */}
-          <div className="p-4 flex flex-col items-center justify-center h-[calc(100%-2.5rem)]">
+          {/* HZLR Internal Header */}
+          <div className="text-center">
+            <span 
+              className="font-black tracking-widest text-emerald-400" 
+              style={{ fontSize: "3.2cqw" }}
+            >
+              HZLR.
+            </span>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 flex flex-col items-center justify-center">
             {/* Progress Dots */}
-            <div className="flex gap-1.5 mb-6">
+            <div className="flex" style={{ gap: "1.5cqw", marginBottom: "6cqw" }}>
               {demoSteps.map((_, idx) => (
                 <div
                   key={idx}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    idx === currentStep
-                      ? "bg-primary w-5"
-                      : idx < currentStep
-                      ? "bg-primary/60 w-1.5"
-                      : "bg-border w-1.5"
-                  }`}
+                  className="rounded-full transition-all duration-300"
+                  style={{
+                    height: "1.2cqw",
+                    width: idx === currentStep ? "4cqw" : "1.2cqw",
+                    backgroundColor: idx === currentStep 
+                      ? "#34d399" 
+                      : idx < currentStep 
+                      ? "rgba(52, 211, 153, 0.6)" 
+                      : "rgba(255, 255, 255, 0.1)"
+                  }}
                 />
               ))}
             </div>
 
             {/* Step Card */}
             <div
-              className={`glass-card p-5 w-full text-center transition-all duration-300 ${
+              className={`w-full bg-white/5 border border-white/10 backdrop-blur-md text-center transition-all duration-300 ${
                 isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
               }`}
+              style={{
+                borderRadius: "3.5cqw",
+                padding: "4cqw"
+              }}
             >
               <div
-                className={`w-12 h-12 rounded-xl ${step.bgClass} flex items-center justify-center mx-auto mb-3`}
+                className="flex items-center justify-center mx-auto"
+                style={{
+                  width: "11cqw",
+                  height: "11cqw",
+                  borderRadius: "2.5cqw",
+                  marginBottom: "2.5cqw",
+                  backgroundColor: step.bg
+                }}
               >
-                <Icon size={24} className={step.colorClass} />
+                <Icon style={{ width: "5.5cqw", height: "5.5cqw", color: step.color }} />
               </div>
-              <h4 className="font-bold text-base text-foreground mb-1">{step.title}</h4>
-              <p className="text-xs text-muted-foreground">{step.subtitle}</p>
+              <h4 
+                className="font-bold text-white leading-tight" 
+                style={{ fontSize: "3.4cqw", marginBottom: "0.8cqw" }}
+              >
+                {step.title}
+              </h4>
+              <p 
+                className="text-white/60 leading-normal" 
+                style={{ fontSize: "2.5cqw" }}
+              >
+                {step.subtitle}
+              </p>
             </div>
 
             {/* Step Counter */}
-            <div className="mt-6 text-[10px] text-muted-foreground font-medium">
+            <div 
+              className="font-medium text-white/40" 
+              style={{ marginTop: "6cqw", fontSize: "2.4cqw" }}
+            >
               Step {currentStep + 1} of {demoSteps.length}
             </div>
           </div>
+
         </div>
-      </div>
+      </IPhoneSimMockup>
 
       {/* Glow Effect */}
       <div className="absolute -inset-4 bg-gradient-to-r from-seafoam/20 via-transparent to-[hsl(var(--status-success)/0.2)] rounded-[3.5rem] blur-2xl -z-10 animate-pulse-soft" />
