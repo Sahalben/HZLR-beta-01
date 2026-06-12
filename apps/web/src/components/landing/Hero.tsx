@@ -2,20 +2,33 @@ import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { HeroDemo } from "./HeroDemo";
-import { SpectraNoise } from "./SpectraNoise";
+import { AnimatedGradientBackground } from "./AnimatedLiquidBackground";
 
 export function Hero() {
   return (
-    <section className="relative lg:min-h-[640px] xl:min-h-[700px] min-h-[85vh] hero-gradient pt-20 md:pt-24 overflow-hidden flex items-center">
-      {/* Dynamic Spectra Noise Background */}
-      <div className="absolute inset-0 pointer-events-none opacity-30 mix-blend-screen z-0">
-        <SpectraNoise 
-          speed={0.08} 
-          noiseIntensity={0.015} 
-          warpAmount={0.3} 
-          resolutionScale={0.5} 
+    <section className="relative lg:min-h-[640px] xl:min-h-[700px] min-h-[85vh] bg-[#022c22] pt-20 md:pt-24 overflow-hidden flex items-center">
+      {/* Framer Animated Liquid Background */}
+      <div className="absolute inset-0 pointer-events-none z-0">
+        <AnimatedGradientBackground 
+          color1="#021c12" // Very deep forest green base
+          color2="#064e3b" // Mid forest green
+          color3="#10b981" // Brand emerald green accent
+          speed={12}       // Elegant, slow moving speed
+          scale={0.55}     // Premium scale proportion
+          rotation={-50}   // Flow direction angle
+          proportion={45}
+          softness={75}
+          distortion={6}
+          swirl={18}
+          swirlIterations={8}
+          shapeSize={30}
+          shape="Checks"
+          className="w-full h-full object-cover"
         />
       </div>
+
+      {/* Seamless blend transition overlay to next section */}
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent pointer-events-none z-[2]" />
 
       <div className="container mx-auto px-4 sm:px-6 py-8 md:py-12 relative z-10">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
@@ -61,10 +74,6 @@ export function Hero() {
           </div>
         </div>
       </div>
-
-      {/* Background Decorations */}
-      <div className="absolute top-1/4 right-0 w-96 h-96 bg-seafoam/20 rounded-full blur-[120px] pointer-events-none z-0" />
-      <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-success/10 rounded-full blur-[100px] pointer-events-none z-0" />
     </section>
   );
 }
