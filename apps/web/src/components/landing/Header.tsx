@@ -40,11 +40,10 @@ export function Header() {
 
         {/* Logo */}
         <Link to="/" className="flex items-center z-10 relative group">
-          <img 
-            src="/hzlr-logo-green.jpg" 
-            alt="HZLR Logo" 
-            className="h-8 md:h-9 w-auto rounded-lg object-contain shadow-sm transition-transform duration-300 group-hover:scale-105" 
-          />
+          <span className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center gap-0.5">
+            HZLR
+            <span className="text-emerald-400 group-hover:scale-125 transition-transform duration-300">.</span>
+          </span>
         </Link>
 
         {/* Desktop Navigation Links */}
