@@ -9,8 +9,8 @@ const guarantees = [
     description:
       "Every gig is prefunded before you start. Escrow ensures your earnings are protected and paid out instantly upon completion.",
     highlight: "Escrow Protected",
-    colorClass: "text-success",
-    bgClass: "bg-success/10",
+    colorClass: "text-foreground/70",
+    bgClass: "bg-foreground/10",
   },
   {
     icon: UserCheck,
@@ -18,8 +18,8 @@ const guarantees = [
     description:
       "Build your digital resume with every completed gig. Aadhaar-verified profiles and grooming badges prove your professionalism.",
     highlight: "Aadhaar Verified",
-    colorClass: "text-info",
-    bgClass: "bg-info/10",
+    colorClass: "text-foreground/70",
+    bgClass: "bg-foreground/10",
   },
   {
     icon: Shield,
@@ -27,8 +27,8 @@ const guarantees = [
     description:
       "Monitored in-app chat, one-click reporting, and a 2-hour SLA for ticket resolution. Plus backup queue ensures no lost opportunities.",
     highlight: "2-Hour SLA",
-    colorClass: "text-warning",
-    bgClass: "bg-warning/10",
+    colorClass: "text-foreground/70",
+    bgClass: "bg-foreground/10",
   },
 ];
 

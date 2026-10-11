@@ -126,8 +126,8 @@ export function ForWorkers() {
           <BentoCard
             className="p-7 flex flex-col justify-between min-h-[160px]"
           >
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-4">
-              <Wallet size={20} className="text-emerald-600" />
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mb-4">
+              <Wallet size={20} className="text-white/70" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-foreground mb-1">Instant Payouts</h3>
@@ -138,10 +138,10 @@ export function ForWorkers() {
             </div>
             {/* Visual accent */}
             <div className="mt-5 flex items-center gap-2">
-              <div className="h-1.5 flex-1 rounded-full bg-emerald-500/15">
-                <div className="h-full w-[88%] rounded-full bg-emerald-500/60" />
+              <div className="h-1.5 flex-1 rounded-full bg-white/10">
+                <div className="h-full w-[88%] rounded-full bg-white/30" />
               </div>
-              <span className="text-xs font-semibold text-emerald-600">Same-day</span>
+              <span className="text-xs font-semibold text-white/60">Same-day</span>
             </div>
           </BentoCard>
 
@@ -149,8 +149,8 @@ export function ForWorkers() {
           <BentoCard
             className="p-7 flex flex-col justify-between min-h-[160px]"
           >
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4">
-              <Shield size={20} className="text-blue-500" />
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mb-4">
+              <Shield size={20} className="text-white/70" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-foreground mb-1">Guaranteed Fair Pay</h3>
@@ -159,7 +159,7 @@ export function ForWorkers() {
                 arrive on site.
               </p>
             </div>
-            <div className="mt-5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-xs font-semibold text-blue-600 w-fit">
+            <div className="mt-5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold text-white/60 w-fit">
               <Shield size={11} />
               Escrow Protected
             </div>
@@ -169,8 +169,8 @@ export function ForWorkers() {
           <BentoCard
             className="p-7 flex flex-col justify-between min-h-[160px]"
           >
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center mb-4">
-              <Clock size={20} className="text-amber-500" />
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mb-4">
+              <Clock size={20} className="text-white/70" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-foreground mb-1">Work When You Want</h3>
@@ -186,7 +186,7 @@ export function ForWorkers() {
                   className={cn(
                     "flex-1 h-6 rounded-md flex items-center justify-center text-[10px] font-semibold",
                     [0, 2, 4].includes(i)
-                      ? "bg-amber-500/20 text-amber-600"
+                      ? "bg-white/15 text-white/70"
                       : "bg-muted text-muted-foreground",
                   )}
                 >
@@ -221,8 +221,8 @@ export function ForWorkers() {
           <BentoCard
             className="p-7 flex flex-col justify-between min-h-[160px]"
           >
-            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center mb-4">
-              <Award size={20} className="text-purple-500" />
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mb-4">
+              <Award size={20} className="text-white/70" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-foreground mb-1">Grow Your Credibility</h3>
@@ -234,10 +234,10 @@ export function ForWorkers() {
             <div className="mt-5">
               <div className="flex justify-between text-[11px] font-medium mb-1.5">
                 <span className="text-muted-foreground">Reliability Score</span>
-                <span className="text-purple-600 font-bold">94 / 100</span>
+                <span className="text-white/60 font-bold">94 / 100</span>
               </div>
-              <div className="h-1.5 rounded-full bg-purple-500/15">
-                <div className="h-full w-[94%] rounded-full bg-purple-500/70" />
+              <div className="h-1.5 rounded-full bg-white/10">
+                <div className="h-full w-[94%] rounded-full bg-white/30" />
               </div>
             </div>
           </BentoCard>
