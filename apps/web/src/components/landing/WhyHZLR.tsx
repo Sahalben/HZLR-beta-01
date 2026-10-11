@@ -75,9 +75,9 @@ const GUARANTEES = [
     title: "Guaranteed Fair Pay",
     description:
       "Every gig is pre-funded before you start. Escrow holds the amount until completion — then it's yours instantly.",
-    accentBg: "hsl(158 55% 40% / 0.08)",
-    accentText: "text-emerald-500 dark:text-emerald-400",
-    accentBorder: "border-emerald-500/15",
+    accentBg: "hsl(0 0% 100% / 0.05)",
+    accentText: "text-foreground/60",
+    accentBorder: "border-border/50",
   },
   {
     Icon: IconVerify,
@@ -85,9 +85,9 @@ const GUARANTEES = [
     title: "Guaranteed Credibility",
     description:
       "Government-grade identity verification powers every profile. Build a digital resume with every gig you complete.",
-    accentBg: "hsl(214 80% 56% / 0.08)",
-    accentText: "text-blue-500 dark:text-blue-400",
-    accentBorder: "border-blue-500/15",
+    accentBg: "hsl(0 0% 100% / 0.05)",
+    accentText: "text-foreground/60",
+    accentBorder: "border-border/50",
   },
   {
     Icon: IconSafety,
@@ -95,9 +95,9 @@ const GUARANTEES = [
     title: "Guaranteed Safety",
     description:
       "Monitored in-app communication, one-click dispute escalation, and a backup queue that ensures no missed opportunity.",
-    accentBg: "hsl(38 85% 52% / 0.08)",
-    accentText: "text-amber-500 dark:text-amber-400",
-    accentBorder: "border-amber-500/15",
+    accentBg: "hsl(0 0% 100% / 0.05)",
+    accentText: "text-foreground/60",
+    accentBorder: "border-border/50",
   },
 ] as const;
 
@@ -109,7 +109,7 @@ const STEPS = [
     sub: "Build your trusted profile",
     description:
       "Complete Aadhaar e-KYC, upload a profile photo, and earn grooming certifications. Your identity is your resume.",
-    accentText: "text-blue-500 dark:text-blue-400",
+    accentText: "text-foreground/60",
   },
   {
     num: "02",
@@ -118,7 +118,7 @@ const STEPS = [
     sub: "Gig, check-in, get paid",
     description:
       "Browse pre-funded gigs, geo-verify your arrival, complete the work, and receive instant UPI payout.",
-    accentText: "text-emerald-500 dark:text-emerald-400",
+    accentText: "text-foreground/60",
   },
   {
     num: "03",
@@ -127,7 +127,7 @@ const STEPS = [
     sub: "Build your career",
     description:
       "Reliability scores rise with every gig. Higher ratings unlock premium shifts, better pay, and new opportunities.",
-    accentText: "text-amber-500 dark:text-amber-400",
+    accentText: "text-foreground/60",
   },
 ] as const;
 
@@ -484,7 +484,7 @@ export function WhyHZLR() {
                       <div className="flex items-start justify-between mb-6">
                         <div
                           className={cn("p-2.5 rounded-2xl", step.accentText)}
-                          style={{ background: "hsl(158 40% 40% / 0.07)" }}
+                          style={{ background: "hsl(0 0% 100% / 0.05)" }}
                         >
                           <StepIcon />
                         </div>

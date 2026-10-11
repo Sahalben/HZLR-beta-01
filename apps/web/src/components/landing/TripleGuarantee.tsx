@@ -38,7 +38,7 @@ export function TripleGuarantee() {
       <div className="container mx-auto px-4 sm:px-6">
         {/* Section Header */}
         <ScrollReveal className="text-center max-w-3xl mx-auto mb-16">
-          <span className="inline-block text-sm font-semibold text-seafoam mb-4 tracking-wide uppercase">
+          <span className="inline-block text-sm font-semibold text-muted-foreground mb-4 tracking-wide uppercase">
             Why HZLR
           </span>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-6">

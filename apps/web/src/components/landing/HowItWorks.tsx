@@ -11,7 +11,7 @@ const steps = [
     subtitle: "Build Trust",
     description:
       "Complete Aadhaar e-KYC, upload your profile photo, and get grooming certified. Your verified digital identity opens doors.",
-    color: "from-blue-500 to-cyan-500",
+    color: "from-muted-foreground/40 to-muted-foreground/20",
   },
   {
     step: "02",
@@ -20,7 +20,7 @@ const steps = [
     subtitle: "Get Paid Instantly",
     description:
       "Browse prefunded gigs, apply or join backup queue. Check-in with geo-verification, complete work, get paid instantly to your wallet.",
-    color: "from-emerald-500 to-green-500",
+    color: "from-muted-foreground/40 to-muted-foreground/20",
   },
   {
     step: "03",
@@ -29,7 +29,7 @@ const steps = [
     subtitle: "Build Your Career",
     description:
       "Every completed gig adds to your digital resume. Higher reliability scores unlock premium opportunities and better pay.",
-    color: "from-amber-500 to-orange-500",
+    color: "from-muted-foreground/40 to-muted-foreground/20",
   },
 ];
 
@@ -39,7 +39,7 @@ export function HowItWorks() {
       <div className="container mx-auto px-4 sm:px-6">
         {/* Section Header */}
         <ScrollReveal className="text-center max-w-3xl mx-auto mb-16">
-          <span className="inline-block text-sm font-semibold text-seafoam mb-4 tracking-wide uppercase">
+          <span className="inline-block text-sm font-semibold text-muted-foreground mb-4 tracking-wide uppercase">
             Simple Process
           </span>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-6">
@@ -78,7 +78,7 @@ export function HowItWorks() {
                   <h3 className="text-2xl font-bold text-foreground mb-2">
                     {item.title}
                   </h3>
-                  <p className="text-sm font-medium text-seafoam mb-3">
+                  <p className="text-sm font-medium text-muted-foreground mb-3">
                     {item.subtitle}
                   </p>
                   <p className="text-muted-foreground leading-relaxed max-w-sm mx-auto">
