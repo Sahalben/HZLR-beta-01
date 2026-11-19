@@ -86,7 +86,7 @@ function FeatureList({
     variant === "dark" ? "text-primary-foreground" : "text-foreground";
 
   return (
-    <ul className="space-y-3 mb-8">
+    <ul className="space-y-3 mb-4">
       {features.map((feature) => (
         <li key={feature} className="flex items-center gap-3">
           <div
@@ -137,7 +137,7 @@ function WorkerPanel() {
               A <span className="font-semibold text-foreground">10% platform contribution</span> is
               deducted from each gig's earnings. Once your total contributions reach{" "}
               <span className="font-semibold text-foreground">₹400 in a month</span>, deductions
-              stop for that month. No separate fee is charged — the 10% <em>is</em> the ₹400
+              stop for that month. No separate fee is charged. The 10% <em>is</em> the ₹400
               monthly contribution.
             </p>
           </div>
@@ -178,7 +178,7 @@ const EMPLOYER_PLANS = [
     label: "Households",
     price: "Free",
     priceSub: "always",
-    description: "Hire verified workers for household jobs — no subscription needed.",
+    description: "Hire verified workers for household jobs, no subscription needed.",
     features: [
       "Post household gigs instantly",
       "Browse Aadhaar-verified workers",
