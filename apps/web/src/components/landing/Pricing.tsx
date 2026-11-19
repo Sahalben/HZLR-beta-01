@@ -229,8 +229,6 @@ const EMPLOYER_PLANS = [
       "White-label options",
       "Multi-site workforce management",
       "Advanced analytics & reporting",
-      "24/7 priority support",
-      "Dedicated success team",
     ],
     cta: "Contact Sales",
     ctaTo: "mailto:sales@hzlr.in",
