@@ -60,9 +60,6 @@ const IconStep3 = () => (
 const MARQUEE_ITEMS = [
   { label: "Aadhaar Verified Workers" },
   { label: "Escrow-Protected Pay" },
-  { label: "14,000+ Matches Weekly" },
-  { label: "4.8 Min Avg Match Time" },
-  { label: "Zero Commission" },
   { label: "Geo-Verified Check-in" },
   { label: "2-Hour SLA" },
   { label: "Instant UPI Payout" },
@@ -299,7 +296,6 @@ export function WhyHZLR() {
         <div className="container mx-auto px-4 sm:px-6 max-w-4xl">
           <motion.div style={{ y: headerY, opacity: headerOpacity }} className="text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/8 border border-primary/12 mb-5">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
               <span className="text-[11px] font-bold text-primary uppercase tracking-widest">
                 Why HZLR · Simple Process
               </span>
